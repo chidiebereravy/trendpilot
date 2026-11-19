@@ -1,69 +1,466 @@
-import Image from "next/image";
+﻿import Link from "next/link";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Clock3,
+  Lightbulb,
+  Search,
+  TrendingUp,
+} from "lucide-react";
 
-export default function Home() {
+const broadNiches = [
+  {
+    name: "Business",
+    description: "Entrepreneurship, marketing and online business.",
+    number: "01",
+    image:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=85",
+  },
+  {
+    name: "Technology",
+    description: "Artificial intelligence, software and digital trends.",
+    number: "02",
+    image:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=85",
+  },
+  {
+    name: "Finance",
+    description: "Personal finance, investing and financial literacy.",
+    number: "03",
+    image:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=85",
+  },
+  {
+    name: "Education",
+    description: "Learning, careers and professional development.",
+    number: "04",
+    image:
+      "https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=900&q=85",
+  },
+  {
+    name: "Lifestyle",
+    description: "Wellness, productivity and everyday living.",
+    number: "05",
+    image:
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=85",
+  },
+  {
+    name: "Innovation",
+    description: "New ideas, emerging industries and opportunities.",
+    number: "06",
+    image:
+      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=900&q=85",
+  },
+];
+
+const stories = [
+  {
+    category: "Business",
+    title: "The Changing Landscape of Modern Entrepreneurship",
+    description:
+      "Explore the ideas, strategies and emerging opportunities shaping today's business environment.",
+    readTime: "8 min read",
+    image:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1100&q=85",
+  },
+  {
+    category: "Technology",
+    title: "How Artificial Intelligence Is Reshaping Everyday Life",
+    description:
+      "Understand the technologies transforming how people work, communicate and solve problems.",
+    readTime: "6 min read",
+    image:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1100&q=85",
+  },
+  {
+    category: "Finance",
+    title: "Building Better Financial Habits for the Future",
+    description:
+      "A practical introduction to financial awareness, planning and responsible decision-making.",
+    readTime: "7 min read",
+    image:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1100&q=85",
+  },
+];
+
+const heroImages = [
+  {
+    label: "Business",
+    image:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=90",
+    position: "left-[2%] top-[3%] z-10 w-[53%] rotate-[-7deg]",
+  },
+  {
+    label: "Technology",
+    image:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=90",
+    position: "right-[1%] top-[9%] z-20 w-[48%] rotate-[6deg]",
+  },
+  {
+    label: "Finance",
+    image:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=90",
+    position: "left-[4%] bottom-[5%] z-30 w-[49%] rotate-[5deg]",
+  },
+  {
+    label: "Ideas & People",
+    image:
+      "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=90",
+    position: "right-[0%] bottom-[1%] z-40 w-[52%] rotate-[-5deg]",
+  },
+];
+
+function HeroCollage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="relative mx-auto h-[420px] w-full max-w-[550px] sm:h-[490px] lg:h-[550px]">
+      <div className="absolute inset-[10%] rotate-[-8deg] rounded-full bg-[#c7a56c]/25 blur-3xl" />
+
+      {heroImages.map((item, index) => (
+        <div
+          key={item.label}
+          className={`absolute ${item.position} h-[190px] overflow-hidden rounded-xl border-[5px] border-white shadow-2xl sm:h-[225px] lg:h-[260px]`}
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 hover:scale-110"
+            style={{ backgroundImage: `url("${item.image}")` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/75 to-transparent" />
+          <span className="absolute bottom-4 left-4 text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+            {item.label}
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      ))}
+
+      <div className="absolute right-0 bottom-[9%] z-50 border border-[#e8e0d1] bg-white px-4 py-4 shadow-2xl sm:right-[-2%] sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6f1e7]">
+            <BookOpen size={19} className="text-[#b99658]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-[#14243d]">
+              Ideas worth exploring
+            </p>
+            <p className="mt-1 text-[10px] text-gray-500">
+              Knowledge. Perspective. Progress.
+            </p>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
+  );
+}
+
+function SectionHeading({ eyebrow, title, description }) {
+  return (
+    <div className="max-w-2xl">
+      <span className="text-[10px] font-bold tracking-[0.2em] text-[#a78348] uppercase">
+        {eyebrow}
+      </span>
+      <h2 className="mt-3 text-3xl leading-tight font-bold tracking-tight text-[#14243d] sm:text-4xl">
+        {title}
+      </h2>
+      {description && (
+        <p className="mt-4 text-sm leading-7 text-gray-600">{description}</p>
+      )}
+    </div>
+  );
+}
+
+function NicheCard({ niche }) {
+  return (
+    <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <Link
+        href={`/category/${niche.name.toLowerCase()}`}
+        className="block"
+        aria-label={`Explore ${niche.name} niche`}
+      >
+        <div className="relative h-48 overflow-hidden bg-[#e9e6df]">
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110"
+            style={{ backgroundImage: `url("${niche.image}")` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/80 via-transparent to-transparent" />
+          <span className="absolute top-4 left-4 border border-white/40 bg-[#101d30]/50 px-3 py-2 text-[9px] font-bold tracking-[0.18em] text-white uppercase backdrop-blur-sm">
+            Broad niche {niche.number}
+          </span>
+          <h3 className="absolute bottom-5 left-5 text-2xl font-bold text-white">
+            {niche.name}
+          </h3>
+        </div>
+      </Link>
+
+      <div className="p-5">
+        <p className="text-sm leading-6 text-gray-600">{niche.description}</p>
+        <Link
+          href={`/category/${niche.name.toLowerCase()}`}
+          className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#14243d] transition hover:text-[#a78348]"
+        >
+          Explore this niche
+          <ArrowRight size={15} />
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function ArticleCard({ article }) {
+  return (
+    <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <Link
+        href="/articles"
+        aria-label={`Read ${article.title}`}
+        className="block"
+      >
+        <div className="relative h-56 overflow-hidden bg-[#e9e6df]">
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url("${article.image}")` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/60 to-transparent" />
+          <span className="absolute bottom-5 left-5 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            {article.category}
+          </span>
+        </div>
+      </Link>
+
+      <div className="p-6">
+        <span className="text-[10px] font-bold tracking-[0.18em] text-[#a78348] uppercase">
+          {article.category}
+        </span>
+        <h3 className="mt-3 text-xl leading-snug font-bold tracking-tight text-[#14243d] transition group-hover:text-[#a78348]">
+          {article.title}
+        </h3>
+        <p className="mt-3 text-sm leading-7 text-gray-600">
+          {article.description}
+        </p>
+        <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+          <span className="flex items-center gap-2 text-xs text-gray-400">
+            <Clock3 size={14} />
+            {article.readTime}
+          </span>
+          <Link
+            href="/articles"
+            className="flex items-center gap-1 text-xs font-bold text-[#14243d] hover:text-[#a78348]"
+          >
+            Read story
+            <ArrowUpRight size={15} />
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <main className="font-sans">
+      <section className="relative isolate overflow-hidden bg-[#101d30]">
+        <div
+          className="absolute inset-0 -z-30 bg-cover bg-center"
+          style={{
+            backgroundImage: "url('/images/trendpilot-hero.png')",
+          }}
+        />
+        <div className="absolute inset-0 -z-20 bg-[#101d30]/75" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#101d30] via-[#101d30]/90 to-[#101d30]/55" />
+        <div className="hero-pattern absolute inset-0 -z-10 opacity-20" />
+
+        <div className="container-main grid items-center gap-8 py-12 sm:py-16 lg:min-h-[720px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-4 lg:py-20">
+          <div className="relative z-50 max-w-2xl py-5">
+            <div className="inline-flex items-center gap-3 border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-md">
+              <span className="h-2 w-2 rounded-full bg-[#d5b77e]" />
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#e6d4b3] uppercase">
+                Independent ideas. Meaningful insights.
+              </span>
+            </div>
+
+            <h1 className="mt-8 text-5xl leading-[1.08] font-bold tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
+              Explore Ideas.
+              <span className="mt-2 block text-[#d5b77e]">
+                Find Your Opportunity.
+              </span>
+            </h1>
+
+            <p className="mt-7 max-w-xl text-sm leading-8 text-gray-200 sm:text-base">
+              Discover useful knowledge, carefully selected insights and focused
+              topics across business, technology, finance, education, lifestyle
+              and innovation. Follow your interests from broad subjects to
+              highly specific micro niches.
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-4">
+              <Link
+                href="/articles"
+                className="inline-flex items-center gap-3 bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
+              >
+                Discover stories
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/category/business"
+                className="inline-flex items-center gap-3 border border-white/40 bg-white/5 px-7 py-4 text-xs font-bold text-white transition hover:border-[#d5b77e] hover:bg-white/10"
+              >
+                Explore niches
+                <ArrowUpRight size={16} />
+              </Link>
+            </div>
+
+            <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/20 pt-7">
+              <div className="flex items-center gap-3">
+                <TrendingUp size={19} className="text-[#d5b77e]" />
+                <span className="text-xs font-medium text-gray-200">
+                  Discover emerging trends
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Lightbulb size={19} className="text-[#d5b77e]" />
+                <span className="text-xs font-medium text-gray-200">
+                  Explore focused knowledge
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10">
+            <HeroCollage />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[#eeeae2] bg-[#fcfbf9]">
+        <div className="container-main py-14 sm:py-16">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <SectionHeading
+              eyebrow="Explore your interests"
+              title="Six broad niches. Countless ideas."
+              description="Start with a subject you love. Discover its subcategories and explore focused micro niches curated by the TrendPilot editorial team."
+            />
+            <Link
+              href="/articles"
+              className="mb-1 inline-flex items-center gap-2 text-xs font-bold text-[#14243d] hover:text-[#a78348]"
+            >
+              Browse all stories
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {broadNiches.map((niche) => (
+              <NicheCard key={niche.name} niche={niche} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-16 sm:py-20">
+        <div className="container-main">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <SectionHeading
+              eyebrow="The TrendPilot journal"
+              title="Stories that make you think."
+              description="Thoughtful perspectives and useful information across subjects that matter."
+            />
+            <Link
+              href="/articles"
+              className="mb-1 inline-flex items-center gap-2 text-xs font-bold text-[#14243d] hover:text-[#a78348]"
+            >
+              View all articles
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="mt-10 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+            {stories.map((article) => (
+              <ArticleCard key={article.category} article={article} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative isolate overflow-hidden bg-[#f3f0e9]">
+        <div
+          className="absolute inset-y-0 right-0 -z-10 hidden w-1/2 bg-cover bg-center opacity-20 md:block"
+          style={{
+            backgroundImage: "url('/images/trendpilot-hero.png')",
+          }}
+        />
+        <div className="container-main grid gap-10 py-16 sm:py-20 md:grid-cols-2 md:items-center">
+          <div>
+            <SectionHeading
+              eyebrow="Go beyond the obvious"
+              title="Find the smaller opportunities inside bigger ideas."
+              description="A broad subject can contain hundreds of specialised topics. TrendPilot is designed to help readers discover focused areas of knowledge, explore emerging interests and find valuable perspectives."
+            />
+            <Link
+              href="/articles"
+              className="mt-7 inline-flex items-center gap-3 bg-[#14243d] px-6 py-4 text-xs font-bold text-white transition hover:bg-[#263e59]"
+            >
+              Start exploring
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="relative min-h-[320px] overflow-hidden bg-[#14243d] shadow-xl">
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-45"
+              style={{
+                backgroundImage: "url('/images/trendpilot-hero.png')",
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#101d30]/95 via-[#14243d]/65 to-transparent" />
+            <div className="relative flex min-h-[320px] flex-col justify-end p-8 sm:p-10">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#d5b77e] uppercase">
+                Broad niches to micro niches
+              </span>
+              <h3 className="mt-4 max-w-sm text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl">
+                The more focused the question, the more interesting the
+                discovery.
+              </h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="newsletter-section mt-14">
+        <div className="container-main grid gap-10 py-16 sm:py-20 md:grid-cols-2 md:items-center">
+          <div>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[#a78348] uppercase">
+              Stay informed
+            </span>
+            <h2 className="mt-4 text-3xl leading-tight font-bold tracking-tight text-[#14243d] sm:text-4xl">
+              Make room for better ideas.
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-8 text-gray-600">
+              Get fresh perspectives, useful stories and thoughtful insights.
+              Join the TrendPilot community and discover something worth
+              sharing.
+            </p>
+          </div>
+
+          <div className="border border-[#e7e3da] bg-white p-7 shadow-sm sm:p-9">
+            <div className="flex h-12 w-12 items-center justify-center bg-[#f6f1e7]">
+              <Search size={21} className="text-[#b99658]" />
+            </div>
+            <h3 className="mt-5 text-2xl font-bold tracking-tight text-[#14243d]">
+              The TrendPilot newsletter
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-gray-600">
+              Thoughtful reading, delivered to your inbox.
+            </p>
+            <Link
+              href="/newsletter"
+              className="mt-6 inline-flex w-full items-center justify-center gap-3 bg-[#14243d] px-6 py-4 text-xs font-bold text-white transition hover:bg-[#263e59]"
+            >
+              Join our newsletter
+              <ArrowRight size={16} />
+            </Link>
+            <p className="mt-4 text-center text-[11px] text-gray-400">
+              You can unsubscribe at any time.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
