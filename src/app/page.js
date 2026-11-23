@@ -1,88 +1,51 @@
-﻿import Link from "next/link";
+﻿import ArticleCard from "@/components/articles/ArticleCard";
+import {
+  getPublishedArticles,
+  getPublishedCategories,
+} from "@/lib/public-content";
 import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  Clock3,
   Lightbulb,
   Search,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
-const broadNiches = [
-  {
-    name: "Business",
+const NICHE_PRESENTATION = {
+  business: {
     description: "Entrepreneurship, marketing and online business.",
-    number: "01",
     image:
       "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=85",
   },
-  {
-    name: "Technology",
+  technology: {
     description: "Artificial intelligence, software and digital trends.",
-    number: "02",
     image:
       "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=85",
   },
-  {
-    name: "Finance",
+  finance: {
     description: "Personal finance, investing and financial literacy.",
-    number: "03",
     image:
       "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=85",
   },
-  {
-    name: "Education",
+  education: {
     description: "Learning, careers and professional development.",
-    number: "04",
     image:
       "https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=900&q=85",
   },
-  {
-    name: "Lifestyle",
+  lifestyle: {
     description: "Wellness, productivity and everyday living.",
-    number: "05",
     image:
       "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=85",
   },
-  {
-    name: "Innovation",
+  innovation: {
     description: "New ideas, emerging industries and opportunities.",
-    number: "06",
     image:
       "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=900&q=85",
   },
-];
-
-const stories = [
-  {
-    category: "Business",
-    title: "The Changing Landscape of Modern Entrepreneurship",
-    description:
-      "Explore the ideas, strategies and emerging opportunities shaping today's business environment.",
-    readTime: "8 min read",
-    image:
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1100&q=85",
-  },
-  {
-    category: "Technology",
-    title: "How Artificial Intelligence Is Reshaping Everyday Life",
-    description:
-      "Understand the technologies transforming how people work, communicate and solve problems.",
-    readTime: "6 min read",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1100&q=85",
-  },
-  {
-    category: "Finance",
-    title: "Building Better Financial Habits for the Future",
-    description:
-      "A practical introduction to financial awareness, planning and responsible decision-making.",
-    readTime: "7 min read",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1100&q=85",
-  },
-];
+};
 
 const heroImages = [
   {
@@ -167,11 +130,11 @@ function SectionHeading({ eyebrow, title, description }) {
   );
 }
 
-function NicheCard({ niche }) {
+function NicheCard({ niche, index }) {
   return (
     <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link
-        href={`/category/${niche.name.toLowerCase()}`}
+        href={`/category/${niche.slug}`}
         className="block"
         aria-label={`Explore ${niche.name} niche`}
       >
@@ -181,9 +144,11 @@ function NicheCard({ niche }) {
             style={{ backgroundImage: `url("${niche.image}")` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/80 via-transparent to-transparent" />
+
           <span className="absolute top-4 left-4 border border-white/40 bg-[#101d30]/50 px-3 py-2 text-[9px] font-bold tracking-[0.18em] text-white uppercase backdrop-blur-sm">
-            Broad niche {niche.number}
+            Broad niche {String(index + 1).padStart(2, "0")}
           </span>
+
           <h3 className="absolute bottom-5 left-5 text-2xl font-bold text-white">
             {niche.name}
           </h3>
@@ -192,8 +157,9 @@ function NicheCard({ niche }) {
 
       <div className="p-5">
         <p className="text-sm leading-6 text-gray-600">{niche.description}</p>
+
         <Link
-          href={`/category/${niche.name.toLowerCase()}`}
+          href={`/category/${niche.slug}`}
           className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#14243d] transition hover:text-[#a78348]"
         >
           Explore this niche
@@ -204,52 +170,108 @@ function NicheCard({ niche }) {
   );
 }
 
-function ArticleCard({ article }) {
-  return (
-    <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <Link
-        href="/articles"
-        aria-label={`Read ${article.title}`}
-        className="block"
-      >
-        <div className="relative h-56 overflow-hidden bg-[#e9e6df]">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-105"
-            style={{ backgroundImage: `url("${article.image}")` }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/60 to-transparent" />
-          <span className="absolute bottom-5 left-5 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
-            {article.category}
-          </span>
-        </div>
-      </Link>
+async function NicheGrid() {
+  const categories = await getPublishedCategories();
 
-      <div className="p-6">
-        <span className="text-[10px] font-bold tracking-[0.18em] text-[#a78348] uppercase">
-          {article.category}
-        </span>
-        <h3 className="mt-3 text-xl leading-snug font-bold tracking-tight text-[#14243d] transition group-hover:text-[#a78348]">
-          {article.title}
+  const niches = categories
+    .filter((category) => category.level === "broad")
+    .sort((a, b) => a.display_order - b.display_order)
+    .map((category) => {
+      const presentation = NICHE_PRESENTATION[category.slug];
+
+      if (!presentation) return null;
+
+      return {
+        ...category,
+        ...presentation,
+      };
+    })
+    .filter(Boolean);
+
+  if (niches.length === 0) {
+    return (
+      <div className="border border-[#eeeae2] bg-white px-6 py-12 text-center sm:col-span-2 lg:col-span-3">
+        <h3 className="font-semibold text-[#14243d]">
+          Topics are being prepared.
         </h3>
-        <p className="mt-3 text-sm leading-7 text-gray-600">
-          {article.description}
+        <p className="mt-2 text-sm text-gray-500">
+          Check back soon to explore our growing collection of niches.
         </p>
-        <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-          <span className="flex items-center gap-2 text-xs text-gray-400">
-            <Clock3 size={14} />
-            {article.readTime}
-          </span>
-          <Link
-            href="/articles"
-            className="flex items-center gap-1 text-xs font-bold text-[#14243d] hover:text-[#a78348]"
-          >
-            Read story
-            <ArrowUpRight size={15} />
-          </Link>
-        </div>
       </div>
-    </article>
+    );
+  }
+
+  return (
+    <>
+      {niches.map((niche, index) => (
+        <NicheCard key={niche.id} niche={niche} index={index} />
+      ))}
+    </>
   );
+}
+
+async function StoriesGrid() {
+  const articles = await getPublishedArticles({ limit: 6 });
+
+  if (articles.length === 0) {
+    return (
+      <div className="border border-[#eeeae2] bg-[#fcfbf9] px-6 py-14 text-center md:col-span-2 lg:col-span-3">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center bg-[#f3f0e9]">
+          <BookOpen size={24} className="text-[#b99658]" />
+        </div>
+
+        <h3 className="mt-5 text-xl font-bold text-[#14243d]">
+          Our first stories are on the way.
+        </h3>
+
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-gray-600">
+          The TrendPilot editorial team is preparing thoughtful insights and
+          practical knowledge. Published articles will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {articles.map((article) => (
+        <ArticleCard key={article.id} article={article} />
+      ))}
+    </>
+  );
+}
+
+function NicheGridFallback() {
+  return Array.from({ length: 6 }, (_, index) => (
+    <div
+      key={index}
+      className="animate-pulse overflow-hidden border border-[#eeeae2] bg-white"
+    >
+      <div className="h-48 bg-gray-200" />
+      <div className="space-y-3 p-5">
+        <div className="h-4 w-3/4 rounded bg-gray-200" />
+        <div className="h-3 w-full rounded bg-gray-100" />
+        <div className="h-3 w-2/3 rounded bg-gray-100" />
+      </div>
+    </div>
+  ));
+}
+
+function StoriesGridFallback() {
+  return Array.from({ length: 3 }, (_, index) => (
+    <div
+      key={index}
+      className="animate-pulse overflow-hidden border border-[#eeeae2] bg-white"
+    >
+      <div className="h-56 bg-gray-200" />
+      <div className="space-y-4 p-6">
+        <div className="h-3 w-1/4 rounded bg-gray-200" />
+        <div className="h-5 w-4/5 rounded bg-gray-200" />
+        <div className="h-3 w-full rounded bg-gray-100" />
+        <div className="h-3 w-2/3 rounded bg-gray-100" />
+      </div>
+    </div>
+  ));
 }
 
 export default function HomePage() {
@@ -346,9 +368,9 @@ export default function HomePage() {
           </div>
 
           <div className="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {broadNiches.map((niche) => (
-              <NicheCard key={niche.name} niche={niche} />
-            ))}
+            <Suspense fallback={<NicheGridFallback />}>
+              <NicheGrid />
+            </Suspense>
           </div>
         </div>
       </section>
@@ -371,9 +393,9 @@ export default function HomePage() {
           </div>
 
           <div className="mt-10 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-            {stories.map((article) => (
-              <ArticleCard key={article.category} article={article} />
-            ))}
+            <Suspense fallback={<StoriesGridFallback />}>
+              <StoriesGrid />
+            </Suspense>
           </div>
         </div>
       </section>

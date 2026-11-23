@@ -1,4 +1,7 @@
-﻿import Link from "next/link";
+﻿"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const footerLinks = [
   { label: "About Us", href: "/about" },
@@ -9,6 +12,12 @@ const footerLinks = [
 ];
 
 export default function SiteFooter() {
+  const pathname = usePathname();
+
+  if (pathname.includes("/auth")) {
+    return null;
+  }
+
   return (
     <footer className="site-footer mt-20">
       <div className="container-main py-14">

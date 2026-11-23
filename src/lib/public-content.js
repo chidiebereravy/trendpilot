@@ -1,0 +1,346 @@
+﻿import "server-only";
+
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { connection } from "next/server";
+
+const ARTICLE_FIELDS =
+  "id, title, slug, excerpt, content, category_id, author_id, featured_image_path, seo_title, seo_description, focus_keyword, canonical_url, no_index, published_at, created_at, updated_at";
+
+const CATEGORY_FIELDS =
+  "id, parent_id, name, slug, level, status, description, seo_title, seo_description, display_order";
+
+export function getArticleReadingTime(content) {
+  const blocks = Array.isArray(content?.content) ? content.content : [];
+
+  const words = blocks.reduce((total, block) => {
+    const text =
+      typeof block.text === "string"
+        ? block.text
+        : Array.isArray(block.items)
+          ? block.items.join(" ")
+          : "";
+
+    return total + (text.trim() ? text.trim().split(/\s+/).length : 0);
+  }, 0);
+
+  return Math.max(1, Math.ceil(words / 200));
+}
+
+export function getPublicImageUrl(supabase, imagePath) {
+  if (!imagePath) return null;
+
+  const { data } = supabase.storage
+    .from("trendpilot-media")
+    .getPublicUrl(imagePath);
+
+  return data?.publicUrl || null;
+}
+
+export function getArticleExcerpt(article) {
+  if (article?.excerpt?.trim()) return article.excerpt.trim();
+
+  const blocks = Array.isArray(article?.content?.content)
+    ? article.content.content
+    : [];
+
+  const text = blocks
+    .map((block) => {
+      if (typeof block.text === "string") return block.text;
+      if (Array.isArray(block.items)) return block.items.join(" ");
+      return "";
+    })
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (text.length <= 180) return text;
+
+  return `${text.slice(0, 177).trimEnd()}...`;
+}
+
+export async function getPublishedCategories() {
+  await connection();
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select(CATEGORY_FIELDS)
+    .eq("status", "published")
+    .order("display_order", { ascending: true })
+    .order("name", { ascending: true })
+    .limit(1500);
+
+  if (error) {
+    console.error("Public category query failed:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getPublishedCategoryPath(slugs) {
+  if (!Array.isArray(slugs) || slugs.length === 0) return null;
+
+  const categories = await getPublishedCategories();
+  let parentId = null;
+  let selected = null;
+
+  for (let index = 0; index < slugs.length; index += 1) {
+    const slug = slugs[index];
+
+    selected = categories.find(
+      (category) => category.slug === slug && category.parent_id === parentId,
+    );
+
+    if (!selected) return null;
+
+    parentId = selected.id;
+  }
+
+  return selected;
+}
+
+export function getCategoryAncestors(category, categories) {
+  const ancestors = [];
+  let current = category;
+
+  while (current) {
+    ancestors.unshift(current);
+
+    if (!current.parent_id) break;
+
+    current = categories.find((item) => item.id === current.parent_id);
+
+    if (!current) return [];
+  }
+
+  return ancestors;
+}
+
+export function getCategoryPathname(slugs) {
+  if (!Array.isArray(slugs) || slugs.length === 0) {
+    return "/articles";
+  }
+
+  return `/category/${slugs.map((slug) => encodeURIComponent(slug)).join("/")}`;
+}
+
+export function getCategoryUrl(category, categories) {
+  const ancestors = getCategoryAncestors(category, categories);
+
+  if (!ancestors.length) return "/articles";
+
+  return getCategoryPathname(ancestors.map((item) => item.slug));
+}
+
+export function getCategoryDescendantMicroIds(category, categories) {
+  const descendants = new Set([category.id]);
+
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (const item of categories) {
+      if (item.parent_id && descendants.has(item.parent_id)) {
+        if (!descendants.has(item.id)) {
+          descendants.add(item.id);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  return categories
+    .filter((item) => item.level === "micro" && descendants.has(item.id))
+    .map((item) => item.id);
+}
+
+export async function getPublishedArticles({ limit = 12, categoryIds } = {}) {
+  await connection();
+  const supabase = await createSupabaseServerClient();
+
+  let query = supabase
+    .from("articles")
+    .select(ARTICLE_FIELDS)
+    .eq("status", "published")
+    .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (Array.isArray(categoryIds)) {
+    if (categoryIds.length === 0) return [];
+
+    query = query.in("category_id", categoryIds);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Public article query failed:", error);
+    return [];
+  }
+
+  const articles = data || [];
+  if (!articles.length) return [];
+
+  const categories = await getPublishedCategories();
+
+  const categoryMap = new Map(
+    categories.map((category) => [category.id, category]),
+  );
+
+  return articles.map((article) => {
+    const category = categoryMap.get(article.category_id) || null;
+
+    return {
+      ...article,
+      category,
+      categoryUrl: category
+        ? getCategoryUrl(category, categories)
+        : "/articles",
+      imageUrl: getPublicImageUrl(supabase, article.featured_image_path),
+      excerptText: getArticleExcerpt(article),
+      readingTime: getArticleReadingTime(article.content),
+    };
+  });
+}
+
+export async function getPublishedArticleBySlug(slug) {
+  await connection();
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data: article, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_FIELDS)
+    .eq("slug", slug)
+    .eq("status", "published")
+    .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Public article detail query failed:", error);
+    return null;
+  }
+
+  if (!article) return null;
+
+  const { data: category } = await supabase
+    .from("categories")
+    .select(CATEGORY_FIELDS)
+    .eq("id", article.category_id)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (!category) return null;
+
+  const categories = await getPublishedCategories();
+
+  return {
+    ...article,
+    category,
+    categoryPath: getCategoryAncestors(category, categories),
+    author: null,
+    imageUrl: getPublicImageUrl(supabase, article.featured_image_path),
+    excerptText: getArticleExcerpt(article),
+    readingTime: getArticleReadingTime(article.content),
+    categoryUrl: getCategoryUrl(category, categories),
+  };
+}
+
+export async function getPublishedArticlesPage({
+  page = 1,
+  pageSize = 12,
+  categoryIds = [],
+} = {}) {
+  await connection();
+
+  const supabase = await createSupabaseServerClient();
+
+  const safePage = Math.max(1, Math.floor(Number(page) || 1));
+  const safePageSize = Math.min(
+    24,
+    Math.max(1, Math.floor(Number(pageSize) || 12)),
+  );
+
+  if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+    return {
+      articles: [],
+      total: 0,
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: 1,
+    };
+  }
+
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("articles")
+    .select(ARTICLE_FIELDS, { count: "exact" })
+    .eq("status", "published")
+    .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
+    .in("category_id", categoryIds)
+    .order("published_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    console.error("Paginated public article query failed:", error);
+
+    return {
+      articles: [],
+      total: 0,
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: 1,
+    };
+  }
+
+  const articles = data || [];
+  const total = count || 0;
+
+  if (articles.length === 0) {
+    return {
+      articles: [],
+      total,
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+    };
+  }
+
+  const categories = await getPublishedCategories();
+
+  const categoryMap = new Map(
+    categories.map((category) => [category.id, category]),
+  );
+
+  const enrichedArticles = articles.map((article) => {
+    const category = categoryMap.get(article.category_id) || null;
+
+    return {
+      ...article,
+      category,
+      categoryUrl: category
+        ? getCategoryUrl(category, categories)
+        : "/articles",
+      imageUrl: getPublicImageUrl(supabase, article.featured_image_path),
+      excerptText: getArticleExcerpt(article),
+      readingTime: getArticleReadingTime(article.content),
+    };
+  });
+
+  return {
+    articles: enrichedArticles,
+    total,
+    page: safePage,
+    pageSize: safePageSize,
+    totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+  };
+}
