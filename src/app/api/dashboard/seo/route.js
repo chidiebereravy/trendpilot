@@ -3,6 +3,9 @@ import { handleApiError, successResponse } from "@/lib/api/response";
 import { assertSameOrigin, readValidatedBody } from "@/lib/api/request";
 import { updateSeoSettingsSchema } from "@/features/seo/schemas/seo.schema";
 
+import { revalidateTag } from "next/cache";
+import { PUBLIC_SEO_SETTINGS_CACHE_TAG } from "@/lib/seo-settings";
+
 const SEO_SETTINGS_FIELDS = [
   "id",
   "site_name",
@@ -137,6 +140,10 @@ export async function PATCH(request) {
         "SEO_SETTINGS_NOT_FOUND",
       );
     }
+
+    revalidateTag(PUBLIC_SEO_SETTINGS_CACHE_TAG, {
+      expire: 0,
+    });
 
     return successResponse(
       toApiSettings(data),

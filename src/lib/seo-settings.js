@@ -1,7 +1,9 @@
 import "server-only";
 
-import { connection } from "next/server";
+import { cacheLife, cacheTag } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+export const PUBLIC_SEO_SETTINGS_CACHE_TAG = "public-seo-settings";
 
 export const DEFAULT_SEO_SETTINGS = {
   site_name: "TrendPilot",
@@ -63,7 +65,10 @@ export function getSiteUrl() {
 }
 
 export async function getPublicSeoSettings() {
-  await connection();
+  "use cache";
+
+  cacheLife("hours");
+  cacheTag(PUBLIC_SEO_SETTINGS_CACHE_TAG);
 
   try {
     const supabase = createSupabaseAdminClient();

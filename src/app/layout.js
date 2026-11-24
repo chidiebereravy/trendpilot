@@ -19,6 +19,10 @@ export async function generateMetadata() {
       template: settings.title_template,
     },
 
+    alternates: {
+      canonical: "/",
+    },
+
     description: settings.default_description,
     applicationName: settings.site_name,
 
@@ -41,6 +45,7 @@ export async function generateMetadata() {
       title: settings.default_title,
       description: settings.default_description,
       ...(socialImages ? { images: socialImages } : {}),
+      url: siteUrl,
     },
 
     twitter: {

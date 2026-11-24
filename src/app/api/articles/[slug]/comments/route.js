@@ -7,6 +7,7 @@ import {
   commentPageQuerySchema,
   createCommentSchema,
 } from "@/features/comments/schemas/comment.schema";
+import { createNotificationSafely } from "@/features/notifications/services/notification.service";
 import {
   applyCommentCursor,
   buildCommentPage,
@@ -178,22 +179,26 @@ export async function POST(request, { params }) {
     const body = await readValidatedBody(request, createCommentSchema);
     const parentId = body.parentId ?? null;
 
+    let parent = null;
+
     if (parentId) {
-      const { data: parent, error: parentError } = await supabase
+      const { data, error: parentError } = await supabase
         .from("comments")
-        .select("id, article_id")
+        .select("id, article_id, author_id")
         .eq("id", parentId)
         .maybeSingle();
 
       if (parentError) throw parentError;
 
-      if (!parent || parent.article_id !== article.id) {
+      if (!data || data.article_id !== article.id) {
         throw new AuthError(
           "The parent comment does not belong to this article.",
           404,
           "COMMENT_PARENT_NOT_FOUND",
         );
       }
+
+      parent = data;
     }
 
     const { data, error } = await supabase
@@ -208,6 +213,36 @@ export async function POST(request, { params }) {
       .single();
 
     if (error) handleCommentDatabaseError(error);
+
+    // A reply notifies the author of its direct parent comment.
+    // A top-level comment notifies the article author.
+    const recipientId = parent ? parent.author_id : article.author_id;
+
+    if (recipientId && recipientId !== user.id) {
+      const isReply = Boolean(parent);
+
+      await createNotificationSafely({
+        userId: recipientId,
+        actorId: user.id,
+        type: "comment",
+        title: isReply
+          ? "Someone replied to your comment"
+          : "New comment on your article",
+        message: isReply
+          ? `Someone replied to your comment on "${article.title}".`
+          : `Someone commented on your article "${article.title}".`,
+        actionUrl: `/articles/${article.slug}#comments`,
+        metadata: {
+          event: isReply ? "comment_reply" : "article_comment",
+          articleId: article.id,
+          articleTitle: article.title,
+          articleSlug: article.slug,
+          commentId: data.id,
+          parentCommentId: parent?.id ?? null,
+        },
+        dedupeKey: `comment:${data.id}:${recipientId}`,
+      });
+    }
 
     return successResponse(
       { comment: serializeComment(data) },

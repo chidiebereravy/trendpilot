@@ -18,9 +18,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquare,
+  Bell,
 } from "lucide-react";
 
 import { useAuthSession, useLogout } from "@/features/auth/hooks/useAuth";
+import { useUnreadNotificationCount } from "@/features/notifications/queries/notification.queries";
 
 const searchItems = [
   {
@@ -54,6 +56,12 @@ const searchItems = [
     href: "/dashboard/comments",
     icon: MessageSquare,
   },
+  {
+    label: "Notifications",
+    description: "View workspace updates and alerts",
+    href: "/dashboard/notifications",
+    icon: Bell,
+  },
 ];
 
 const pageInformation = [
@@ -82,6 +90,11 @@ const pageInformation = [
     href: "/dashboard/comments",
     title: "Comments",
     description: "Manage discussions across your published articles",
+  },
+  {
+    href: "/dashboard/notifications",
+    title: "Notifications",
+    description: "View and manage your workspace notifications",
   },
 ];
 
@@ -131,6 +144,7 @@ export default function DashboardHeader({
 
   const { data: session } = useAuthSession();
   const logout = useLogout();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
 
   const accountName =
     session?.profile?.displayName ||
@@ -350,6 +364,34 @@ export default function DashboardHeader({
             </>
           )}
         </div>
+
+        <Link
+          href="/dashboard/notifications"
+          aria-label={
+            unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : "Notifications"
+          }
+          aria-current={
+            pathname === "/dashboard/notifications" ? "page" : undefined
+          }
+          className={[
+            "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            "border border-slate-200 text-[#14243d] transition",
+            "hover:border-[#c4a16a] hover:bg-slate-50",
+            pathname === "/dashboard/notifications"
+              ? "border-[#c4a16a] bg-[#f5f1e9]"
+              : "",
+          ].join(" ")}
+        >
+          <Bell size={18} />
+
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#b4533c] px-1 text-[9px] leading-none font-bold text-white ring-2 ring-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
 
         {/* Mobile account initials */}
         <div className="relative">

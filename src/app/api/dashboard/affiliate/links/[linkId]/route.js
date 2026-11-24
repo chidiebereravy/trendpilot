@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/session";
 import { assertSameOrigin, readValidatedBody } from "@/lib/api/request";
 import { handleApiError, successResponse } from "@/lib/api/response";
+import { createNotificationSafely } from "@/features/notifications/services/notification.service";
 
 const LINK_FIELDS = `
   id,
@@ -392,6 +393,31 @@ export async function PATCH(request, { params }) {
         409,
         "AFFILIATE_LINK_CONCURRENT_UPDATE",
       );
+    }
+
+    // Notify the link creator only after approval succeeds.
+    if (
+      existing.status === "pending_review" &&
+      data.status === "approved" &&
+      existing.created_by &&
+      existing.created_by !== user.id
+    ) {
+      await createNotificationSafely({
+        userId: existing.created_by,
+        actorId: user.id,
+        type: "moderation",
+        title: "Your affiliate link has been approved",
+        message: `Your affiliate link "${data.title}" has been approved and is ready for the next step.`,
+        actionUrl: "/dashboard/affiliate-links",
+        metadata: {
+          event: "affiliate_link_approved",
+          affiliateLinkId: data.id,
+          affiliateLinkTitle: data.title,
+          programId: data.program_id,
+          programName: data.program?.name ?? null,
+        },
+        dedupeKey: `affiliate-link:${data.id}:approved:${data.revision}`,
+      });
     }
 
     const message = mustReturnToDraft

@@ -190,6 +190,14 @@ export async function POST(request, { params }) {
       });
 
       if (archiveError.code === "23514") {
+        if (archiveError.message?.includes("site logo or favicon")) {
+          return errorResponse(
+            "This image is currently used as the site logo or favicon. Select a replacement in General Settings before archiving it.",
+            409,
+            "BRANDING_MEDIA_IN_USE",
+          );
+        }
+
         return errorResponse(
           "This image is still being used by an article. Remove its article references before archiving it.",
           409,

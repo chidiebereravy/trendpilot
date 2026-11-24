@@ -6,6 +6,10 @@ import {
   createArticleSchema,
 } from "@/features/articles/schemas/article.schema";
 import { slugify } from "@/lib/utils";
+import {
+  createNotificationSafely,
+  createNotificationsForRolesSafely,
+} from "@/features/notifications/services/notification.service";
 
 const articleFields =
   "id, title, slug, excerpt, content, category_id, author_id, created_by, status, featured_image_path, seo_title, seo_description, focus_keyword, canonical_url, no_index, published_at, scheduled_at, reviewed_by, reviewed_at, created_at, updated_at";
@@ -186,6 +190,53 @@ export async function POST(request) {
       .single();
 
     if (error) handleDatabaseError(error);
+
+    if (data.status === "in_review" && profile.role === "author") {
+      await createNotificationsForRolesSafely({
+        roles: ["editor", "admin"],
+        actorId: user.id,
+        type: "moderation",
+        title: "Article submitted for review",
+        message: `"${data.title}" is ready for editorial review.`,
+        actionUrl: "/dashboard/articles",
+        metadata: {
+          event: "article_submitted_for_review",
+          articleId: data.id,
+          articleTitle: data.title,
+        },
+        dedupeKey: `article:${data.id}:submitted-for-review:${data.updated_at}`,
+      });
+    }
+
+    if (
+      ["editor", "admin"].includes(profile.role) &&
+      ["published", "scheduled"].includes(data.status) &&
+      data.author_id !== user.id
+    ) {
+      const isPublished = data.status === "published";
+
+      await createNotificationSafely({
+        userId: data.author_id,
+        actorId: user.id,
+        type: "article",
+        title: isPublished
+          ? "Your article has been published"
+          : "Your article has been scheduled",
+        message: isPublished
+          ? `"${data.title}" has been published.`
+          : `"${data.title}" has been scheduled for publication.`,
+        actionUrl: "/dashboard/articles",
+        metadata: {
+          event: isPublished ? "article_published" : "article_scheduled",
+          articleId: data.id,
+          articleTitle: data.title,
+          status: data.status,
+          publishedAt: data.published_at,
+          scheduledAt: data.scheduled_at,
+        },
+        dedupeKey: `article:${data.id}:${data.status}:${data.updated_at}`,
+      });
+    }
 
     return successResponse(data, 201, "Article created successfully.");
   } catch (error) {

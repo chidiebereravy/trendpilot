@@ -29,7 +29,7 @@ export async function requireAuthContext({ allowedRoles } = {}) {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, display_name, role")
+    .select("id, display_name, role, created_at, updated_at")
     .eq("id", user.id)
     .maybeSingle();
 
