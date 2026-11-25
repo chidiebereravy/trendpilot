@@ -2,10 +2,11 @@ import { ArrowRight, BookOpen, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { getPublicSeoSettings } from "@/lib/seo-settings";
 
 import ArticleCard from "@/components/articles/ArticleCard";
+import AdPlacement from "@/components/advertising/AdPlacement";
 import {
   getCategoryDescendantMicroIds,
   getCategoryUrl,
@@ -257,7 +258,6 @@ async function CategoryContent({ params, searchParams }) {
 
           <div className="max-w-3xl">
             <div className="mb-5 flex items-center gap-3">
-              <span className="h-px w-8 bg-[#c4a064]" />
               <span className="text-[10px] font-semibold tracking-[0.24em] text-[#d9b878] uppercase">
                 {levelLabel}
               </span>
@@ -340,8 +340,15 @@ async function CategoryContent({ params, searchParams }) {
 
         {articles.length > 0 ? (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+            {articles.map((article, index) => (
+              <Fragment key={article.id}>
+                <ArticleCard article={article} />
+                {index === 2 && articles.length > 3 && (
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <AdPlacement placementKey="category_feed" />
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
         ) : (

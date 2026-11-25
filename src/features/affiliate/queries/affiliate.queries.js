@@ -9,6 +9,8 @@ import {
   getAffiliatePrograms,
   updateAffiliateLink,
   updateAffiliateProgram,
+  getArticleAffiliatePlacements,
+  saveArticleAffiliatePlacements,
 } from "@/features/affiliate/api/affiliate.api";
 
 import { affiliateKeys } from "@/features/affiliate/queries/affiliate.keys";
@@ -108,5 +110,29 @@ export function useAffiliateLinkStats() {
     queryFn: getAffiliateLinkStats,
     staleTime: 30 * 1000,
     retry: false,
+  });
+}
+
+export function useArticleAffiliatePlacements(articleId, options = {}) {
+  return useQuery({
+    queryKey: affiliateKeys.articlePlacements(articleId),
+    queryFn: () => getArticleAffiliatePlacements(articleId),
+    enabled: Boolean(articleId) && (options.enabled ?? true),
+    staleTime: 15 * 1000,
+    retry: false,
+  });
+}
+
+export function useSaveArticleAffiliatePlacements() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ articleId, placements }) =>
+      saveArticleAffiliatePlacements(articleId, placements),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: affiliateKeys.articlePlacements(variables.articleId),
+      });
+    },
   });
 }

@@ -53,3 +53,20 @@ export async function getAffiliateLinkStats() {
   const response = await api.get("/dashboard/affiliate/links/stats");
   return response.data.data;
 }
+
+export async function getArticleAffiliatePlacements(articleId) {
+  const response = await api.get(
+    `/dashboard/articles/${articleId}/affiliate-links`,
+  );
+
+  return response.data.data;
+}
+
+export async function saveArticleAffiliatePlacements(articleId, placements) {
+  const response = await api.put(
+    `/dashboard/articles/${articleId}/affiliate-links`,
+    { placements },
+  );
+
+  return response.data.data;
+}

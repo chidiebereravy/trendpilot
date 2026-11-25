@@ -5,7 +5,7 @@ import { formatDate, formatReadingTime } from "@/lib/utils";
 
 export default function ArticleCard({ article }) {
   return (
-    <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <article className="group overflow-hidden rounded-xl border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={`/articles/${article.slug}`}
         aria-label={`Read ${article.title}`}

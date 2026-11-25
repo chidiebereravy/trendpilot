@@ -23,24 +23,33 @@ const slugSchema = z
 const nullableText = (max, message) =>
   z.string().trim().max(max, message).nullable().optional();
 
+const blockIdSchema = z
+  .string()
+  .uuid("The content block ID must be a valid UUID.")
+  .optional();
+
 const paragraphBlockSchema = z.object({
   type: z.literal("paragraph"),
+  id: blockIdSchema,
   text: z.string().max(50000),
 });
 
 const headingBlockSchema = z.object({
   type: z.literal("heading"),
+  id: blockIdSchema,
   level: z.enum(["h2", "h3"]),
   text: z.string().min(1).max(1000),
 });
 
 const quoteBlockSchema = z.object({
   type: z.literal("quote"),
+  id: blockIdSchema,
   text: z.string().max(10000),
 });
 
 const listBlockSchema = z.object({
   type: z.literal("list"),
+  id: blockIdSchema,
   style: z.enum(["bullet", "number"]),
   items: z.array(z.string().max(5000)).min(1).max(100),
 });

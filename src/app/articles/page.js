@@ -1,8 +1,9 @@
 ﻿import Link from "next/link";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { connection } from "next/server";
 import { ArrowRight, BookOpen } from "lucide-react";
 import ArticleCard from "@/components/articles/ArticleCard";
+import AdPlacement from "@/components/advertising/AdPlacement";
 import { getPublicSeoSettings } from "@/lib/seo-settings";
 import {
   getPublishedArticles,
@@ -129,8 +130,15 @@ async function ArticlesContent() {
 
         {articles.length ? (
           <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+            {articles.map((article, index) => (
+              <Fragment key={article.id}>
+                <ArticleCard article={article} />
+                {index === 2 && articles.length > 3 && (
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <AdPlacement placementKey="article_feed" />
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
         ) : (

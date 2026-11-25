@@ -1,4 +1,5 @@
 ﻿import ArticleCard from "@/components/articles/ArticleCard";
+import AdPlacement from "@/components/advertising/AdPlacement";
 import {
   getPublishedArticles,
   getPublishedCategories,
@@ -132,7 +133,7 @@ function SectionHeading({ eyebrow, title, description }) {
 
 function NicheCard({ niche, index }) {
   return (
-    <article className="group overflow-hidden border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <article className="group overflow-hidden rounded-xl border border-[#eeeae2] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={`/category/${niche.slug}`}
         className="block"
@@ -145,8 +146,8 @@ function NicheCard({ niche, index }) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#101d30]/80 via-transparent to-transparent" />
 
-          <span className="absolute top-4 left-4 border border-white/40 bg-[#101d30]/50 px-3 py-2 text-[9px] font-bold tracking-[0.18em] text-white uppercase backdrop-blur-sm">
-            Broad niche {String(index + 1).padStart(2, "0")}
+          <span className="absolute top-4 left-4 rounded-xs border border-white/40 bg-[#101d30]/50 px-3 py-2 text-[9px] font-bold tracking-[0.18em] text-white uppercase backdrop-blur-sm">
+            Broad category
           </span>
 
           <h3 className="absolute bottom-5 left-5 text-2xl font-bold text-white">
@@ -314,16 +315,16 @@ export default function HomePage() {
             <div className="mt-9 flex flex-wrap gap-4">
               <Link
                 href="/articles"
-                className="inline-flex items-center gap-3 bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
+                className="inline-flex items-center gap-3 rounded-xs bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
               >
                 Discover stories
                 <ArrowRight size={16} />
               </Link>
               <Link
                 href="/category/business"
-                className="inline-flex items-center gap-3 border border-white/40 bg-white/5 px-7 py-4 text-xs font-bold text-white transition hover:border-[#d5b77e] hover:bg-white/10"
+                className="inline-flex items-center gap-3 rounded-xs border border-white/40 bg-white/5 px-7 py-4 text-xs font-bold !text-white transition hover:border-[#d5b77e] hover:bg-white/10"
               >
-                Explore niches
+                Explore more stories
                 <ArrowUpRight size={16} />
               </Link>
             </div>
@@ -349,6 +350,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Suspense fallback={null}>
+        <AdPlacement placementKey="homepage_feature" />
+      </Suspense>
 
       <section className="border-b border-[#eeeae2] bg-[#fcfbf9]">
         <div className="container-main py-14 sm:py-16">
@@ -416,7 +421,7 @@ export default function HomePage() {
             />
             <Link
               href="/articles"
-              className="mt-7 inline-flex items-center gap-3 bg-[#14243d] px-6 py-4 text-xs font-bold text-white transition hover:bg-[#263e59]"
+              className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#14243d] px-6 py-4 text-xs font-bold !text-white transition hover:bg-[#263e59]"
             >
               Start exploring
               <ArrowRight size={16} />
@@ -472,7 +477,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/newsletter"
-              className="mt-6 inline-flex w-full items-center justify-center gap-3 bg-[#14243d] px-6 py-4 text-xs font-bold text-white transition hover:bg-[#263e59]"
+              className="mt-6 inline-flex w-full items-center justify-center gap-3 bg-[#14243d] px-6 py-4 text-xs font-bold !text-white transition hover:bg-[#263e59]"
             >
               Join our newsletter
               <ArrowRight size={16} />

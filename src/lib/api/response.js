@@ -76,5 +76,15 @@ export function handleApiError(error) {
     return errorResponse(error.message, error.status, error.code);
   }
 
+  if (process.env.NODE_ENV === "development") {
+    console.error("[API] Unexpected error:", {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+      stack: error?.stack,
+    });
+  }
+
   return errorResponse();
 }

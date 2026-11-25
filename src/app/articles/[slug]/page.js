@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -7,8 +7,10 @@ import { ArrowLeft, ArrowRight, Clock3, CalendarDays } from "lucide-react";
 import { getPublicSeoSettings, getSiteUrl } from "@/lib/seo-settings";
 
 import ArticleCard from "@/components/articles/ArticleCard";
+import AdPlacement from "@/components/advertising/AdPlacement";
 import ArticleDocument from "@/components/articles/ArticleDocument";
 import PublicCommentThread from "@/features/comments/components/PublicCommentThread";
+import { getPublicAffiliatePlacements } from "@/lib/public-affiliate";
 import {
   getPublishedArticleBySlug,
   getPublishedArticles,
@@ -144,6 +146,8 @@ async function ArticleContent({ params }) {
 
   const { article, relatedArticles } = data;
 
+  const affiliatePlacements = await getPublicAffiliatePlacements(article.id);
+
   const canonicalUrl = getArticleCanonicalUrl(article);
 
   const structuredData = {
@@ -265,10 +269,15 @@ async function ArticleContent({ params }) {
           </div>
         )}
 
+        <AdPlacement placementKey="article_top" />
+
         <div className="container-main py-12 sm:py-16">
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[minmax(0,760px)_240px] lg:gap-16">
             <div className="min-w-0">
-              <ArticleDocument content={article.content} />
+              <ArticleDocument
+                content={article.content}
+                affiliatePlacements={affiliatePlacements}
+              />
 
               <div className="mt-14 border-t border-[#e9e7e2] pt-8">
                 <Link
@@ -307,6 +316,8 @@ async function ArticleContent({ params }) {
           </div>
         </div>
       </article>
+
+      <AdPlacement placementKey="article_bottom" />
 
       <PublicCommentThread articleSlug={article.slug} />
 

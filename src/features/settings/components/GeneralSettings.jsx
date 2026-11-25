@@ -226,7 +226,15 @@ export default function GeneralSettings() {
   const settingsQuery = useGeneralSettings();
   const updateMutation = useUpdateGeneralSettings();
 
-  const mediaQuery = useMedia({
+  const logoMediaQuery = useMedia({
+    purpose: "logo",
+    status: "published",
+    page: 1,
+    pageSize: 50,
+  });
+
+  const faviconMediaQuery = useMedia({
+    purpose: "favicon",
     status: "published",
     page: 1,
     pageSize: 50,
@@ -237,15 +245,8 @@ export default function GeneralSettings() {
 
   const settings = settingsQuery.data;
 
-  const publishedAssets = useMemo(
-    () =>
-      (mediaQuery.data?.items ?? []).filter(
-        (asset) =>
-          asset.status === "published" &&
-          asset.bucket_id === "trendpilot-media",
-      ),
-    [mediaQuery.data],
-  );
+  const logoAssets = logoMediaQuery.data?.items ?? [];
+  const faviconAssets = faviconMediaQuery.data?.items ?? [];
 
   useEffect(() => {
     function initializeSettings() {
@@ -475,18 +476,18 @@ export default function GeneralSettings() {
               label="Website logo"
               value={form.logoMediaAssetId}
               onChange={(value) => updateField("logoMediaAssetId", value)}
-              assets={publishedAssets}
-              isLoading={mediaQuery.isLoading}
-              error={mediaQuery.isError}
+              assets={logoAssets}
+              isLoading={logoMediaQuery.isLoading}
+              error={logoMediaQuery.isError}
             />
 
             <MediaSelect
               label="Favicon"
               value={form.faviconMediaAssetId}
               onChange={(value) => updateField("faviconMediaAssetId", value)}
-              assets={publishedAssets}
-              isLoading={mediaQuery.isLoading}
-              error={mediaQuery.isError}
+              assets={faviconAssets}
+              isLoading={faviconMediaQuery.isLoading}
+              error={faviconMediaQuery.isError}
             />
           </div>
 
@@ -504,27 +505,45 @@ export default function GeneralSettings() {
             </Link>
           </div>
 
-          {mediaQuery.isError && (
+          {(logoMediaQuery.isError || faviconMediaQuery.isError) && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              Published media could not be loaded. You can still update the
-              other settings and choose branding assets later.
-              <button
-                type="button"
-                onClick={() => mediaQuery.refetch()}
-                className="ml-2 font-semibold underline"
-              >
-                Retry
-              </button>
+              {logoMediaQuery.isError && (
+                <span>
+                  Logo media could not be loaded.{" "}
+                  <button
+                    type="button"
+                    onClick={() => logoMediaQuery.refetch()}
+                    className="font-semibold underline"
+                  >
+                    Retry logo
+                  </button>
+                </span>
+              )}
+
+              {faviconMediaQuery.isError && (
+                <span className="ml-2">
+                  Favicon media could not be loaded.{" "}
+                  <button
+                    type="button"
+                    onClick={() => faviconMediaQuery.refetch()}
+                    className="font-semibold underline"
+                  >
+                    Retry favicon
+                  </button>
+                </span>
+              )}
             </div>
           )}
 
-          {!mediaQuery.isLoading &&
-            !mediaQuery.isError &&
-            publishedAssets.length === 0 && (
+          {!logoMediaQuery.isLoading &&
+            !faviconMediaQuery.isLoading &&
+            !logoMediaQuery.isError &&
+            !faviconMediaQuery.isError &&
+            logoAssets.length === 0 &&
+            faviconAssets.length === 0 && (
               <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                No published branding assets were found in the first page of the
-                Media Library. Upload and publish your logo or favicon there
-                first.
+                No published logo or favicon assets were found. Upload and
+                publish your logo or favicon in the Media Library first.
               </p>
             )}
         </SettingsCard>

@@ -13,7 +13,7 @@ const BUCKET = "trendpilot-media-staging";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const mediaFields =
-  "id, owner_id, created_by, bucket_id, object_path, original_filename, mime_type, file_size_bytes, width, height, alt_text, caption, status, reviewed_by, reviewed_at, created_at, updated_at";
+  "id, owner_id, created_by, bucket_id, object_path, original_filename, mime_type, file_size_bytes, width, height, purpose, alt_text, caption, status, reviewed_by, reviewed_at, created_at, updated_at";
 
 const allowedMimeTypes = {
   jpeg: "image/jpeg",
@@ -162,6 +162,12 @@ export async function GET(request) {
       query = query.eq("status", filters.status);
     }
 
+    if (filters.purpose === "unclassified") {
+      query = query.is("purpose", null);
+    } else if (filters.purpose) {
+      query = query.eq("purpose", filters.purpose);
+    }
+
     const from = (filters.page - 1) * filters.pageSize;
     const to = from + filters.pageSize - 1;
 
@@ -226,6 +232,10 @@ export async function POST(request) {
     }
 
     const metadataResult = mediaMetadataSchema.safeParse({
+      purpose:
+        typeof formData.get("purpose") === "string"
+          ? formData.get("purpose")
+          : undefined,
       altText:
         typeof formData.get("altText") === "string"
           ? formData.get("altText")
@@ -289,6 +299,7 @@ export async function POST(request) {
         original_filename: originalFilename,
         mime_type: detectedMime,
         file_size_bytes: file.size,
+        purpose: metadata.purpose,
         alt_text: metadata.altText,
         caption: metadata.caption,
         status: "staged",

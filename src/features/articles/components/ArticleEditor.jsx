@@ -34,6 +34,7 @@ import {
 import { useArticle } from "@/features/articles/queries/article.queries";
 import { useMedia } from "@/features/media/hooks/useMedia";
 import { slugify } from "@/lib/utils";
+import ArticleAffiliatePlacementEditor from "@/features/affiliate/components/ArticleAffiliatePlacementEditor";
 
 const inputClass =
   "mt-2 w-full rounded-sm border border-[#dfe2e8] bg-white px-3.5 py-3 text-sm text-[#172033] outline-none transition placeholder:text-gray-400 focus:border-[#b99658] focus:ring-2 focus:ring-[#b99658]/10";
@@ -49,19 +50,21 @@ function getErrorMessage(error) {
 }
 
 function createBlock(type) {
+  const id = crypto.randomUUID();
+
   if (type === "heading") {
-    return { type, level: "h2", text: "" };
+    return { id, type, level: "h2", text: "" };
   }
 
   if (type === "quote") {
-    return { type, text: "" };
+    return { id, type, text: "" };
   }
 
   if (type === "list") {
-    return { type, style: "bullet", items: [""] };
+    return { id, type, style: "bullet", items: [""] };
   }
 
-  return { type: "paragraph", text: "" };
+  return { id, type: "paragraph", text: "" };
 }
 
 function BlockEditor({ blocks, onChange }) {
@@ -110,7 +113,7 @@ function BlockEditor({ blocks, onChange }) {
 
         {blocks.map((block, index) => (
           <div
-            key={`${block.type}-${index}`}
+            key={block.id}
             className="group relative border border-[#edf0f2] bg-white p-3 transition focus-within:border-[#d7c49e] sm:p-4"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -300,6 +303,7 @@ export default function ArticleEditor({ articleId = null }) {
   const canAssignAuthors = permissions.canAssignAuthors === true;
 
   const mediaQuery = useMedia({
+    purpose: "article",
     page: 1,
     pageSize: 50,
     status: role === "author" ? "staged" : "published",
@@ -362,7 +366,13 @@ export default function ArticleEditor({ articleId = null }) {
       setExcerpt(article.excerpt ?? "");
 
       setBlocks(
-        Array.isArray(article.content?.content) ? article.content.content : [],
+        (Array.isArray(article.content?.content)
+          ? article.content.content
+          : []
+        ).map((block) => ({
+          ...block,
+          id: block.id || crypto.randomUUID(),
+        })),
       );
 
       setCategoryId(article.category_id ?? "");
@@ -720,6 +730,15 @@ export default function ArticleEditor({ articleId = null }) {
           </section>
 
           <BlockEditor blocks={blocks} onChange={setBlocks} />
+
+          {isEditing && (
+            <ArticleAffiliatePlacementEditor
+              articleId={articleId}
+              blocks={blocks}
+              role={role}
+              articleStatus={initialStatus}
+            />
+          )}
 
           <section className="border border-[#e8e9ed] bg-white p-5 sm:p-7">
             <SectionHeading

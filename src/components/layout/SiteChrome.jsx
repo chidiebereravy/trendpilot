@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
+import AnalyticsConsent from "@/components/privacy/AnalyticsConsent";
+import GoogleAnalytics from "@/components/privacy/GoogleAnalytics";
 
 function SiteChromeContent({ children }) {
   const pathname = usePathname();
@@ -19,6 +21,8 @@ function SiteChromeContent({ children }) {
       <SiteHeader />
       <main>{children}</main>
       <SiteFooter />
+      <AnalyticsConsent />
+      <GoogleAnalytics />
     </>
   );
 }

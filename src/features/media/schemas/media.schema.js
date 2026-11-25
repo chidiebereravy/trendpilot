@@ -2,7 +2,19 @@
 
 export const mediaStatuses = ["staged", "published", "archived"];
 
+export const mediaPurposes = [
+  "article",
+  "affiliate",
+  "advertisement",
+  "avatar",
+  "favicon",
+  "logo",
+];
+
+export const mediaPurposeFilters = [...mediaPurposes, "unclassified"];
+
 export const mediaMetadataSchema = z.object({
+  purpose: z.enum(mediaPurposes),
   altText: z
     .string()
     .trim()
@@ -36,6 +48,7 @@ export const mediaMetadataUpdateSchema = z
 
 export const mediaListFiltersSchema = z.object({
   status: z.enum(mediaStatuses).optional(),
+  purpose: z.enum(mediaPurposeFilters).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });

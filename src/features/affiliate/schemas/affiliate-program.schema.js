@@ -24,6 +24,21 @@ const httpsUrlSchema = z
 
 const optionalHttpsUrlSchema = httpsUrlSchema.nullable().optional();
 
+const optionalTextSchema = (maxLength) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength)
+    .transform((value) => value || null)
+    .nullable()
+    .optional();
+
+const optionalCoverImageSchema = z
+  .string()
+  .uuid("Select a valid campaign cover image.")
+  .nullable()
+  .optional();
+
 export const createAffiliateProgramSchema = z
   .object({
     name: z.string().trim().min(2).max(200),
@@ -47,6 +62,12 @@ export const createAffiliateProgramSchema = z
       .default("USD"),
     status: z.enum(affiliateProgramStatuses).default("draft"),
     notes: z.string().trim().max(5000).nullable().optional(),
+
+    // Campaign presentation fields.
+    description: optionalTextSchema(5000),
+    commission_details: optionalTextSchema(500),
+    eligibility_details: optionalTextSchema(3000),
+    cover_image_id: optionalCoverImageSchema,
   })
   .strict();
 
@@ -74,6 +95,12 @@ export const updateAffiliateProgramSchema = z
       .optional(),
     status: z.enum(affiliateProgramStatuses).optional(),
     notes: z.string().trim().max(5000).nullable().optional(),
+
+    // Campaign presentation fields.
+    description: optionalTextSchema(5000),
+    commission_details: optionalTextSchema(500),
+    eligibility_details: optionalTextSchema(3000),
+    cover_image_id: optionalCoverImageSchema,
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {

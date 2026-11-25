@@ -49,6 +49,21 @@ const topics = [
   },
 ];
 
+export const metadata = {
+  title: "About Us | TrendPilot",
+  description:
+    "Discover TrendPilot: a platform for thoughtful insights, practical knowledge and ideas across business, technology, finance, education, lifestyle and innovation.",
+  alternates: {
+    canonical: "/about",
+  },
+  openGraph: {
+    title: "About TrendPilot",
+    description:
+      "Navigate ideas. Discover opportunities. Explore knowledge and perspectives that matter.",
+    type: "website",
+  },
+};
+
 function SectionHeading({ eyebrow, title, description }) {
   return (
     <div className="max-w-2xl">
@@ -66,21 +81,6 @@ function SectionHeading({ eyebrow, title, description }) {
     </div>
   );
 }
-
-export const metadata = {
-  title: "About Us | TrendPilot",
-  description:
-    "Discover TrendPilot: a platform for thoughtful insights, practical knowledge and ideas across business, technology, finance, education, lifestyle and innovation.",
-  alternates: {
-    canonical: "/about",
-  },
-  openGraph: {
-    title: "About TrendPilot",
-    description:
-      "Navigate ideas. Discover opportunities. Explore knowledge and perspectives that matter.",
-    type: "website",
-  },
-};
 
 export default function AboutPage() {
   return (
@@ -115,14 +115,14 @@ export default function AboutPage() {
             <div className="mt-9 flex flex-wrap gap-4">
               <Link
                 href="/articles"
-                className="inline-flex items-center gap-3 bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
+                className="inline-flex items-center gap-3 rounded-xl bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
               >
                 Explore our articles
                 <ArrowRight size={16} />
               </Link>
               <Link
                 href="/category/business"
-                className="inline-flex items-center gap-3 border border-white/30 px-7 py-4 text-xs font-bold text-white transition hover:border-[#d5b77e] hover:bg-white/5"
+                className="inline-flex items-center gap-3 rounded-xl border border-white/30 px-7 py-4 text-xs font-bold !text-white transition hover:border-[#d5b77e] hover:bg-white/5"
               >
                 Discover our topics
               </Link>
@@ -352,7 +352,7 @@ export default function AboutPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               href="/articles"
-              className="inline-flex items-center gap-3 bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
+              className="inline-flex items-center gap-3 rounded-xl bg-[#c7a56c] px-7 py-4 text-xs font-bold text-[#14243d] transition hover:bg-[#e0c895]"
             >
               Explore articles
               <ArrowRight size={16} />
@@ -360,7 +360,7 @@ export default function AboutPage() {
 
             <Link
               href="/"
-              className="inline-flex items-center border border-white/30 px-7 py-4 text-xs font-bold text-white transition hover:border-[#d5b77e] hover:bg-white/5"
+              className="inline-flex items-center rounded-xl border border-white/30 px-7 py-4 text-xs font-bold !text-white transition hover:border-[#d5b77e] hover:bg-white/5"
             >
               Back to homepage
             </Link>

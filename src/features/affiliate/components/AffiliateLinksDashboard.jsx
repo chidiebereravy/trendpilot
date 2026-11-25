@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useMedia } from "@/features/media/hooks/useMedia";
 
 import {
   useAffiliateLinks,
@@ -30,6 +31,7 @@ import {
   useUpdateAffiliateLink,
   useUpdateAffiliateProgram,
 } from "@/features/affiliate/queries/affiliate.queries";
+import Image from "next/image";
 
 const PAGE_SIZE = 20;
 
@@ -126,10 +128,10 @@ function MetricCard({ label, value, detail, icon: Icon, accent = "gold" }) {
   );
 }
 
-function Modal({ title, description, onClose, children }) {
+function Modal({ title, description, onClose, children, wide = false }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0b1728]/55 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0b1728]/55 p-3 backdrop-blur-[2px] sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -138,7 +140,9 @@ function Modal({ title, description, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="my-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className={`my-auto w-full ${
+          wide ? "max-w-7xl" : "max-w-2xl"
+        } rounded-2xl border border-slate-200 bg-white shadow-2xl`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
           <div>
@@ -147,6 +151,7 @@ function Modal({ title, description, onClose, children }) {
               {description}
             </p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -156,7 +161,8 @@ function Modal({ title, description, onClose, children }) {
             <X size={19} />
           </button>
         </header>
-        <div className="p-5 sm:p-6">{children}</div>
+
+        <div className="p-4 sm:p-6">{children}</div>
       </section>
     </div>
   );
@@ -401,9 +407,34 @@ function ProgramForm({ initial, onSubmit, onCancel, isSaving, error }) {
     default_currency: initial?.default_currency || "USD",
     status: initial?.status || "draft",
     notes: initial?.notes || "",
+    description: initial?.description || "",
+    commission_details: initial?.commission_details || "",
+    eligibility_details: initial?.eligibility_details || "",
+    cover_image_id: initial?.cover_image_id || "",
   }));
 
   const [validationError, setValidationError] = useState("");
+  const [mediaPage, setMediaPage] = useState(1);
+
+  const {
+    data: mediaData,
+    isLoading: isLoadingMedia,
+    isError: isMediaError,
+  } = useMedia({
+    purpose: "affiliate",
+    status: "published",
+    page: mediaPage,
+    pageSize: 20,
+  });
+
+  const mediaItems = mediaData?.items || [];
+  const mediaPagination = mediaData?.pagination;
+
+  const selectedCoverImage =
+    mediaItems.find((asset) => asset.id === form.cover_image_id) ||
+    (initial?.cover_image?.id === form.cover_image_id
+      ? initial.cover_image
+      : null);
 
   function change(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -412,6 +443,11 @@ function ProgramForm({ initial, onSubmit, onCancel, isSaving, error }) {
   function submit(event) {
     event.preventDefault();
     setValidationError("");
+
+    if (form.name.trim().length < 2) {
+      setValidationError("Campaign title must contain at least 2 characters.");
+      return;
+    }
 
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.slug.trim())) {
       setValidationError("Use a lowercase slug with hyphens between words.");
@@ -448,116 +484,471 @@ function ProgramForm({ initial, onSubmit, onCancel, isSaving, error }) {
       website_url: form.website_url.trim() || null,
       terms_url: form.terms_url.trim() || null,
       notes: form.notes.trim() || null,
+      description: form.description.trim() || null,
+      commission_details: form.commission_details.trim() || null,
+      eligibility_details: form.eligibility_details.trim() || null,
+      cover_image_id: form.cover_image_id || null,
     });
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Program name" required>
-          <input
-            className={inputClass}
-            value={form.name}
-            onChange={(e) => change("name", e.target.value)}
-            minLength={2}
-            maxLength={200}
-            required
-          />
-        </Field>
-        <Field
-          label="URL slug"
-          required
-          hint="Lowercase letters, numbers and hyphens."
-        >
-          <input
-            className={inputClass}
-            value={form.slug}
-            onChange={(e) => change("slug", e.target.value)}
-            maxLength={200}
-            required
-          />
-        </Field>
-        <Field label="Program type" required>
-          <select
-            className={inputClass}
-            value={form.program_type}
-            onChange={(e) => change("program_type", e.target.value)}
-          >
-            <option value="affiliate_network">Affiliate network</option>
-            <option value="direct_merchant">Direct merchant</option>
-          </select>
-        </Field>
-        <Field label="Network / provider name">
-          <input
-            className={inputClass}
-            value={form.network_name}
-            onChange={(e) => change("network_name", e.target.value)}
-            maxLength={200}
-          />
-        </Field>
-        <Field label="Website URL">
-          <input
-            className={inputClass}
-            type="url"
-            value={form.website_url}
-            onChange={(e) => change("website_url", e.target.value)}
-            placeholder="https://..."
-          />
-        </Field>
-        <Field label="Terms URL">
-          <input
-            className={inputClass}
-            type="url"
-            value={form.terms_url}
-            onChange={(e) => change("terms_url", e.target.value)}
-            placeholder="https://..."
-          />
-        </Field>
-        <Field label="Commission model">
-          <select
-            className={inputClass}
-            value={form.commission_model}
-            onChange={(e) => change("commission_model", e.target.value)}
-          >
-            <option value="unknown">Unknown</option>
-            <option value="percentage">Percentage</option>
-            <option value="fixed">Fixed</option>
-            <option value="hybrid">Hybrid</option>
-          </select>
-        </Field>
-        <Field label="Default currency">
-          <input
-            className={inputClass}
-            value={form.default_currency}
-            onChange={(e) =>
-              change("default_currency", e.target.value.toUpperCase())
-            }
-            maxLength={3}
-          />
-        </Field>
-        <Field label="Program status">
-          <select
-            className={inputClass}
-            value={form.status}
-            onChange={(e) => change("status", e.target.value)}
-          >
-            {PROGRAM_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {humanize(status)}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
+    <form onSubmit={submit} className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+        <div className="min-w-0 space-y-6">
+          <section className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">
+                Campaign information
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Introduce the affiliate offer and explain why publishers should
+                promote it.
+              </p>
+            </div>
 
-      <Field label="Internal notes">
-        <textarea
-          className={`${inputClass} min-h-24 resize-y`}
-          value={form.notes}
-          onChange={(e) => change("notes", e.target.value)}
-          maxLength={5000}
-        />
-      </Field>
+            <Field label="Campaign title" required>
+              <input
+                className={inputClass}
+                value={form.name}
+                onChange={(e) => change("name", e.target.value)}
+                minLength={2}
+                maxLength={200}
+                placeholder="e.g. Premium Partner Program"
+                required
+              />
+            </Field>
+
+            <Field
+              label="URL slug"
+              required
+              hint="Lowercase letters, numbers and hyphens."
+            >
+              <input
+                className={inputClass}
+                value={form.slug}
+                onChange={(e) => change("slug", e.target.value)}
+                maxLength={200}
+                placeholder="premium-partner-program"
+                required
+              />
+            </Field>
+
+            <Field
+              label="Promotional description"
+              hint="Explain the product, service, and benefits to potential affiliates."
+            >
+              <textarea
+                className={`${inputClass} min-h-32 resize-y`}
+                value={form.description}
+                onChange={(e) => change("description", e.target.value)}
+                maxLength={5000}
+                placeholder="Tell publishers what makes this campaign worth promoting..."
+              />
+            </Field>
+          </section>
+
+          <section className="space-y-4 border-t border-slate-100 pt-6">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">
+                Campaign cover image
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Select a published affiliate image from your Media Library. Only
+                affiliate campaign images are shown here.
+              </p>
+            </div>
+
+            {selectedCoverImage?.preview_url ? (
+              <div className="relative aspect-[16/7] overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                <Image
+                  src={selectedCoverImage.preview_url}
+                  alt={
+                    selectedCoverImage.alt_text ||
+                    selectedCoverImage.original_filename ||
+                    form.name ||
+                    "Campaign cover"
+                  }
+                  fill
+                  unoptimized
+                  sizes="(max-width: 1280px) 100vw, 600px"
+                  className="object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => change("cover_image_id", "")}
+                  className="absolute top-3 right-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow hover:bg-white"
+                >
+                  Remove image
+                </button>
+              </div>
+            ) : (
+              <div className="flex aspect-[16/7] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center">
+                <div>
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+                    <Plus size={20} />
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-slate-700">
+                    No campaign cover selected
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Choose an image below to make your campaign stand out.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {isLoadingMedia ? (
+              <div className="rounded-xl border border-slate-200 p-5 text-sm text-slate-500">
+                Loading affiliate images...
+              </div>
+            ) : isMediaError ? (
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+              >
+                Unable to load affiliate images. Please try again later.
+              </div>
+            ) : mediaItems.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-medium text-slate-700">
+                  No published affiliate images available.
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Upload an image with the Affiliate campaign purpose in Media
+                  Library, then publish it.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {mediaItems.map((asset) => {
+                    const isSelected = form.cover_image_id === asset.id;
+
+                    return (
+                      <button
+                        key={asset.id}
+                        type="button"
+                        onClick={() => change("cover_image_id", asset.id)}
+                        aria-pressed={isSelected}
+                        className={`group overflow-hidden rounded-xl border text-left transition ${
+                          isSelected
+                            ? "border-[#24466f] ring-2 ring-[#24466f]/20"
+                            : "border-slate-200 hover:border-slate-400"
+                        }`}
+                      >
+                        <div className="relative aspect-[4/3] bg-slate-100">
+                          {asset.preview_url ? (
+                            <Image
+                              src={asset.preview_url}
+                              alt={
+                                asset.alt_text ||
+                                asset.original_filename ||
+                                "Affiliate image"
+                              }
+                              fill
+                              unoptimized
+                              sizes="(max-width: 640px) 50vw, 200px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                              Preview unavailable
+                            </div>
+                          )}
+
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#24466f] text-white">
+                              <Check size={14} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-2.5">
+                          <p className="truncate text-xs font-medium text-slate-700">
+                            {asset.original_filename}
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            {isSelected ? "Selected cover" : "Select image"}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {mediaPagination?.totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <p className="text-xs text-slate-500">
+                      Page {mediaPagination.page} of{" "}
+                      {mediaPagination.totalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={mediaPage <= 1}
+                        onClick={() =>
+                          setMediaPage((current) => Math.max(1, current - 1))
+                        }
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        disabled={mediaPage >= mediaPagination.totalPages}
+                        onClick={() =>
+                          setMediaPage((current) =>
+                            Math.min(mediaPagination.totalPages, current + 1),
+                          )
+                        }
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-4 border-t border-slate-100 pt-6">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">
+                Commission and eligibility
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Describe the offer in language publishers can understand.
+              </p>
+            </div>
+
+            <Field
+              label="Commission offer"
+              hint='Examples: "Up to 30% commission" or "$15 per qualified signup".'
+            >
+              <input
+                className={inputClass}
+                value={form.commission_details}
+                onChange={(e) => change("commission_details", e.target.value)}
+                maxLength={500}
+                placeholder="e.g. Up to 30% commission"
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Commission model">
+                <select
+                  className={inputClass}
+                  value={form.commission_model}
+                  onChange={(e) => change("commission_model", e.target.value)}
+                >
+                  <option value="unknown">Unknown</option>
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed</option>
+                  <option value="hybrid">Hybrid</option>
+                </select>
+              </Field>
+
+              <Field label="Default currency">
+                <input
+                  className={inputClass}
+                  value={form.default_currency}
+                  onChange={(e) =>
+                    change("default_currency", e.target.value.toUpperCase())
+                  }
+                  maxLength={3}
+                />
+              </Field>
+            </div>
+
+            <Field
+              label="Eligibility requirements"
+              hint="Explain who can participate and any qualifying conditions."
+            >
+              <textarea
+                className={`${inputClass} min-h-24 resize-y`}
+                value={form.eligibility_details}
+                onChange={(e) => change("eligibility_details", e.target.value)}
+                maxLength={3000}
+                placeholder="e.g. Open to approved publishers with relevant audiences..."
+              />
+            </Field>
+          </section>
+
+          <section className="space-y-4 border-t border-slate-100 pt-6">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">
+                Program details
+              </h3>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Program type" required>
+                <select
+                  className={inputClass}
+                  value={form.program_type}
+                  onChange={(e) => change("program_type", e.target.value)}
+                >
+                  <option value="affiliate_network">Affiliate network</option>
+                  <option value="direct_merchant">Direct merchant</option>
+                </select>
+              </Field>
+
+              <Field label="Network / provider name">
+                <input
+                  className={inputClass}
+                  value={form.network_name}
+                  onChange={(e) => change("network_name", e.target.value)}
+                  maxLength={200}
+                  placeholder="Provider name"
+                />
+              </Field>
+
+              <Field label="Website URL">
+                <input
+                  className={inputClass}
+                  type="url"
+                  value={form.website_url}
+                  onChange={(e) => change("website_url", e.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+
+              <Field label="Terms URL">
+                <input
+                  className={inputClass}
+                  type="url"
+                  value={form.terms_url}
+                  onChange={(e) => change("terms_url", e.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+
+              <Field label="Campaign status">
+                <select
+                  className={inputClass}
+                  value={form.status}
+                  onChange={(e) => change("status", e.target.value)}
+                >
+                  {PROGRAM_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {humanize(status)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Internal notes">
+              <textarea
+                className={`${inputClass} min-h-20 resize-y`}
+                value={form.notes}
+                onChange={(e) => change("notes", e.target.value)}
+                maxLength={5000}
+                placeholder="Notes for administrators..."
+              />
+            </Field>
+          </section>
+        </div>
+
+        <aside className="min-w-0">
+          <div className="space-y-4 xl:sticky xl:top-4">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">
+                Live campaign preview
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Preview how the campaign information comes together.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="relative aspect-[16/9] bg-slate-100">
+                {selectedCoverImage?.preview_url ? (
+                  <Image
+                    src={selectedCoverImage.preview_url}
+                    alt={
+                      selectedCoverImage.alt_text ||
+                      selectedCoverImage.original_filename ||
+                      "Campaign cover preview"
+                    }
+                    fill
+                    unoptimized
+                    sizes="(max-width: 1280px) 100vw, 400px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                    Campaign cover image
+                  </div>
+                )}
+                <div className="absolute top-4 left-4">
+                  <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
+                    {humanize(form.status)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div>
+                  <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Affiliate campaign
+                  </p>
+                  <h4 className="mt-2 text-xl font-bold text-slate-900">
+                    {form.name.trim() || "Your campaign title"}
+                  </h4>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {form.network_name.trim() || "Program provider"}
+                  </p>
+                </div>
+
+                <p className="text-sm leading-6 whitespace-pre-wrap text-slate-600">
+                  {form.description.trim() ||
+                    "Your promotional campaign description will appear here."}
+                </p>
+
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs font-medium text-slate-500">
+                    Commission offer
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-[#24466f]">
+                    {form.commission_details.trim() ||
+                      "Commission details to be announced"}
+                  </p>
+                </div>
+
+                {form.eligibility_details.trim() && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                      Eligibility
+                    </p>
+                    <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-slate-600">
+                      {form.eligibility_details}
+                    </p>
+                  </div>
+                )}
+
+                {form.terms_url.trim() && (
+                  <p className="truncate text-xs text-slate-500">
+                    Terms: {form.terms_url}
+                  </p>
+                )}
+
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="text-xs text-slate-400">
+                    {humanize(form.program_type)} · {form.default_currency}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs leading-5 text-slate-400">
+              This is an editor preview. The final campaign presentation depends
+              on where the program is displayed.
+            </p>
+          </div>
+        </aside>
+      </div>
 
       {(validationError || error) && (
         <div
@@ -568,7 +959,7 @@ function ProgramForm({ initial, onSubmit, onCancel, isSaving, error }) {
         </div>
       )}
 
-      <div className="flex flex-col-reverse justify-end gap-2 border-t border-slate-100 pt-4 sm:flex-row">
+      <div className="flex flex-col-reverse justify-end gap-2 border-t border-slate-100 pt-5 sm:flex-row">
         <ActionButton onClick={onCancel} disabled={isSaving}>
           Cancel
         </ActionButton>
@@ -578,7 +969,7 @@ function ProgramForm({ initial, onSubmit, onCancel, isSaving, error }) {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#14243d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#203858] disabled:opacity-50"
         >
           {isSaving && <LoaderCircle size={15} className="animate-spin" />}
-          {initial ? "Save program" : "Create program"}
+          {initial ? "Save campaign" : "Create campaign"}
         </button>
       </div>
     </form>
@@ -651,6 +1042,24 @@ export default function AffiliateLinksDashboard({ role }) {
   };
 
   const totalLinks = statsQuery.data?.total ?? 0;
+
+  const performance = statsQuery.data?.performance ?? {
+    period: "all_time",
+    clicks: {
+      total: 0,
+      article: 0,
+      other: 0,
+    },
+    conversions: {
+      total: 0,
+      pending: 0,
+      confirmed: 0,
+      rejected: 0,
+      reversed: 0,
+    },
+    conversionRate: 0,
+    commissions: [],
+  };
 
   const createLink = useCreateAffiliateLink();
   const updateLink = useUpdateAffiliateLink();
@@ -1001,6 +1410,100 @@ export default function AffiliateLinksDashboard({ role }) {
                 />
               </div>
             )}
+          </section>
+
+          <section>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-[#14243d]">
+                Affiliate performance
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                All-time recorded clicks, conversions and commissions.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Total clicks"
+                value={formatNumber(performance.clicks.total)}
+                detail={`${formatNumber(performance.clicks.article)} from article placements`}
+                icon={Activity}
+              />
+              <MetricCard
+                label="Confirmed conversions"
+                value={formatNumber(performance.conversions.confirmed)}
+                detail={`${formatNumber(performance.conversions.pending)} pending review`}
+                icon={CheckCircle2}
+                accent="navy"
+              />
+              <MetricCard
+                label="Conversion rate"
+                value={`${Number(performance.conversionRate).toFixed(2)}%`}
+                detail="Confirmed conversions ÷ total clicks"
+                icon={Link2}
+              />
+              <MetricCard
+                label="Other clicks"
+                value={formatNumber(performance.clicks.other)}
+                detail="Clicks outside article placements"
+                icon={ExternalLink}
+              />
+            </div>
+
+            <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-[#14243d]">
+                  Commission breakdown
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Recorded commission amounts grouped by currency and status.
+                </p>
+              </div>
+
+              {performance.commissions.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                  No commission records have been recorded yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-xs text-slate-500">
+                        <th className="pb-3 font-medium">Currency</th>
+                        <th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 text-right font-medium">Records</th>
+                        <th className="pb-3 text-right font-medium">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {performance.commissions.map((commission) => (
+                        <tr key={`${commission.currency}-${commission.status}`}>
+                          <td className="py-3 font-semibold text-[#14243d]">
+                            {commission.currency}
+                          </td>
+                          <td className="py-3 text-slate-600 capitalize">
+                            {humanize(commission.status)}
+                          </td>
+                          <td className="py-3 text-right text-slate-600 tabular-nums">
+                            {formatNumber(commission.recordCount)}
+                          </td>
+                          <td className="py-3 text-right font-semibold text-[#14243d] tabular-nums">
+                            {commission.currency}{" "}
+                            {Number(commission.totalAmount).toLocaleString(
+                              "en-US",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </article>
           </section>
 
           <section className="grid gap-5 lg:grid-cols-2">
@@ -1404,51 +1907,108 @@ export default function AffiliateLinksDashboard({ role }) {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 xl:grid-cols-3">
               {programs.map((program) => (
                 <article
                   key={program.id}
-                  className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-6"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
                 >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-[#14243d]">
-                        {program.name}
-                      </h3>
-                      <StatusBadge status={program.status} />
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500 capitalize">
-                      {humanize(program.program_type)}
-                      {program.network_name ? ` · ${program.network_name}` : ""}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                      <span>
-                        Commission: {humanize(program.commission_model)}
-                      </span>
-                      <span>Currency: {program.default_currency}</span>
-                      {program.website_url && (
-                        <a
-                          href={program.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[#9b7845] hover:underline"
-                        >
-                          Website <ExternalLink size={11} />
-                        </a>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setModal({ type: "view-program", item: program })
+                    }
+                    className="block w-full text-left"
+                    aria-label={`View ${program.name} campaign details`}
+                  >
+                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                      {program.cover_image?.preview_url ? (
+                        <Image
+                          src={program.cover_image.preview_url}
+                          alt={
+                            program.cover_image.alt_text ||
+                            program.cover_image.original_filename ||
+                            program.name
+                          }
+                          fill
+                          unoptimized
+                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <div className="text-center">
+                            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+                              <Link2 size={20} />
+                            </div>
+                            <p className="mt-2 text-xs font-medium text-slate-400">
+                              No campaign cover
+                            </p>
+                          </div>
+                        </div>
                       )}
+
+                      <div className="absolute top-3 right-3">
+                        <StatusBadge status={program.status} />
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="space-y-3 p-5">
+                      <div>
+                        <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                          {humanize(program.program_type)}
+                          {program.network_name
+                            ? ` · ${program.network_name}`
+                            : ""}
+                        </p>
+
+                        <h3 className="mt-1.5 line-clamp-2 text-lg font-bold text-[#14243d]">
+                          {program.name}
+                        </h3>
+                      </div>
+
+                      <p className="line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-500">
+                        {program.description ||
+                          "Explore this affiliate partnership and its available promotional opportunities."}
+                      </p>
+
+                      <div className="rounded-xl bg-slate-50 p-3.5">
+                        <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                          Commission offer
+                        </p>
+                        <p className="mt-1 text-base font-bold text-[#24466f]">
+                          {program.commission_details ||
+                            `Commission details unavailable · ${humanize(program.commission_model)}`}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                        <span className="text-xs text-slate-400">
+                          {program.default_currency} ·{" "}
+                          {humanize(program.program_type)}
+                        </span>
+                        <span className="text-xs font-semibold text-[#9b7845]">
+                          View campaign{" "}
+                          <ArrowRight size={13} className="ml-1 inline" />
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
                   {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActionError("");
-                        setModal({ type: "edit-program", item: program });
-                      }}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <Pencil size={13} /> Edit program
-                    </button>
+                    <div className="border-t border-slate-100 px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActionError("");
+                          setModal({ type: "edit-program", item: program });
+                        }}
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-[#24466f]"
+                      >
+                        <Pencil size={13} />
+                        Edit campaign
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}
@@ -1494,6 +2054,7 @@ export default function AffiliateLinksDashboard({ role }) {
           title="Edit affiliate link"
           description="Update the centrally managed link details. Archived links cannot be edited."
           onClose={() => setModal(null)}
+          wide
         >
           <LinkForm
             initial={modal.item}
@@ -1514,6 +2075,7 @@ export default function AffiliateLinksDashboard({ role }) {
           title="Add affiliate program"
           description="Register an affiliate network or direct merchant partnership."
           onClose={() => setModal(null)}
+          wide
         >
           <ProgramForm
             onSubmit={saveProgram}
@@ -1524,11 +2086,144 @@ export default function AffiliateLinksDashboard({ role }) {
         </Modal>
       )}
 
+      {modal?.type === "view-program" && (
+        <Modal
+          title={modal.item.name}
+          description="Campaign overview, commission offer and partnership requirements."
+          onClose={() => setModal(null)}
+          wide
+        >
+          <div className="space-y-6">
+            {modal.item.cover_image?.preview_url ? (
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-slate-100">
+                <Image
+                  src={modal.item.cover_image.preview_url}
+                  alt={modal.item.cover_image.alt_text || modal.item.name}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={modal.item.status} />
+              <span className="text-xs text-slate-500">
+                {humanize(modal.item.program_type)}
+              </span>
+              {modal.item.network_name && (
+                <span className="text-xs text-slate-500">
+                  · {modal.item.network_name}
+                </span>
+              )}
+            </div>
+
+            {modal.item.description && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  About this campaign
+                </h3>
+                <p className="text-sm leading-7 whitespace-pre-wrap text-slate-600">
+                  {modal.item.description}
+                </p>
+              </section>
+            )}
+
+            <section className="rounded-2xl border border-[#e9dfce] bg-[#faf7f1] p-5">
+              <p className="text-xs font-semibold tracking-wider text-[#9b7845] uppercase">
+                Commission offer
+              </p>
+              <p className="mt-2 text-lg font-bold text-slate-900">
+                {modal.item.commission_details ||
+                  `Commission details unavailable · ${humanize(
+                    modal.item.commission_model,
+                  )}`}
+              </p>
+            </section>
+
+            {modal.item.eligibility_details && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Eligibility and requirements
+                </h3>
+                <p className="text-sm leading-7 whitespace-pre-wrap text-slate-600">
+                  {modal.item.eligibility_details}
+                </p>
+              </section>
+            )}
+
+            <section className="grid gap-4 rounded-xl border border-slate-200 p-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-slate-500">Commission model</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {humanize(modal.item.commission_model)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Default currency</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {modal.item.default_currency}
+                </p>
+              </div>
+            </section>
+
+            {(modal.item.website_url || modal.item.terms_url) && (
+              <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
+                {modal.item.website_url && (
+                  <a
+                    href={modal.item.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Visit website
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+
+                {modal.item.terms_url && (
+                  <a
+                    href={modal.item.terms_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    View terms
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {isAdmin && (
+              <div className="flex justify-end border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionError("");
+                    setModal({
+                      type: "edit-program",
+                      item: modal.item,
+                    });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#24466f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1b3656]"
+                >
+                  <Pencil size={15} />
+                  Edit campaign
+                </button>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {isAdmin && modal?.type === "edit-program" && (
         <Modal
           title="Edit affiliate program"
           description="Update partnership details, terms and availability."
           onClose={() => setModal(null)}
+          wide
         >
           <ProgramForm
             initial={modal.item}

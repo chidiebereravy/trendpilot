@@ -20,11 +20,59 @@ const programFields = [
   "default_currency",
   "status",
   "notes",
+  "description",
+  "commission_details",
+  "eligibility_details",
+  "cover_image_id",
+  "cover_image:media_assets!affiliate_programs_cover_image_id_fkey(id, bucket_id, object_path, original_filename, alt_text, caption)",
   "created_by",
   "updated_by",
   "created_at",
   "updated_at",
 ].join(", ");
+
+function attachCoverImagePreview(program, adminClient) {
+  if (!program.cover_image) {
+    return {
+      ...program,
+      cover_image: null,
+    };
+  }
+
+  const { data } = adminClient.storage
+    .from(program.cover_image.bucket_id)
+    .getPublicUrl(program.cover_image.object_path);
+
+  return {
+    ...program,
+    cover_image: {
+      ...program.cover_image,
+      preview_url: data.publicUrl,
+    },
+  };
+}
+
+function addCoverImagePreview(adminClient, program) {
+  if (!program?.cover_image) {
+    return {
+      ...program,
+      cover_image: null,
+    };
+  }
+
+  const coverImage = program.cover_image;
+  const { data } = adminClient.storage
+    .from(coverImage.bucket_id)
+    .getPublicUrl(coverImage.object_path);
+
+  return {
+    ...program,
+    cover_image: {
+      ...coverImage,
+      preview_url: data.publicUrl,
+    },
+  };
+}
 
 function handleDatabaseError(error) {
   if (error.code === "23505") {
@@ -45,7 +93,7 @@ function handleDatabaseError(error) {
 
   if (error.code === "23503") {
     throw new AuthError(
-      "A referenced account is no longer available.",
+      "A referenced account or media asset is no longer available.",
       409,
       "AFFILIATE_PROGRAM_REFERENCE_INVALID",
     );
@@ -101,7 +149,9 @@ export async function GET(request) {
     if (error) throw error;
 
     return successResponse({
-      items: data || [],
+      items: (data || []).map((program) =>
+        attachCoverImagePreview(program, adminClient),
+      ),
       pagination: {
         page,
         pageSize,
@@ -131,6 +181,10 @@ export async function POST(request) {
         website_url: body.website_url ?? null,
         terms_url: body.terms_url ?? null,
         notes: body.notes ?? null,
+        description: body.description ?? null,
+        commission_details: body.commission_details ?? null,
+        eligibility_details: body.eligibility_details ?? null,
+        cover_image_id: body.cover_image_id ?? null,
         created_by: user.id,
         updated_by: user.id,
       })
@@ -140,9 +194,9 @@ export async function POST(request) {
     if (error) handleDatabaseError(error);
 
     return successResponse(
-      data,
+      attachCoverImagePreview(data, adminClient),
       201,
-      "Affiliate program created successfully.",
+      "Affiliate campaign created successfully.",
     );
   } catch (error) {
     return handleApiError(error);

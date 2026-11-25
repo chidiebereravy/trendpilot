@@ -23,6 +23,7 @@ import {
   useUploadMedia,
 } from "@/features/media/hooks/useMedia";
 import { formatDate } from "@/lib/utils";
+import { mediaPurposeFilters } from "@/features/media/schemas/media.schema";
 
 const PAGE_SIZE = 20;
 
@@ -115,23 +116,26 @@ function ErrorPanel({ message, onRetry }) {
 
 function UploadForm({ onUpload, isPending, error }) {
   const [file, setFile] = useState(null);
+  const [purpose, setPurpose] = useState("");
   const [altText, setAltText] = useState("");
   const [caption, setCaption] = useState("");
 
   function handleSubmit(event) {
     event.preventDefault();
 
-    if (!file) return;
+    if (!file || !purpose) return;
 
     onUpload(
       {
         file,
+        purpose,
         altText: altText.trim(),
         caption: caption.trim(),
       },
       {
         onSuccess: () => {
           setFile(null);
+          setPurpose("");
           setAltText("");
           setCaption("");
 
@@ -213,6 +217,36 @@ function UploadForm({ onUpload, isPending, error }) {
         <div className="space-y-4">
           <div>
             <label
+              htmlFor="upload-purpose"
+              className="text-xs font-semibold text-[#344054]"
+            >
+              Image purpose <span className="text-red-500">*</span>
+            </label>
+
+            <select
+              id="upload-purpose"
+              required
+              value={purpose}
+              onChange={(event) => setPurpose(event.target.value)}
+              className={inputClass}
+            >
+              <option value="">Select image purpose</option>
+              <option value="article">Article image</option>
+              <option value="affiliate">Affiliate campaign cover</option>
+              <option value="advertisement">Advertisement creative</option>
+              <option value="avatar">User profile picture</option>
+              <option value="favicon">Website favicon</option>
+              <option value="logo">Website logo</option>
+            </select>
+
+            <p className="mt-1 text-[10px] leading-5 text-gray-400">
+              This determines where the image can be selected across the
+              platform.
+            </p>
+          </div>
+
+          <div>
+            <label
               htmlFor="upload-alt-text"
               className="text-xs font-semibold text-[#344054]"
             >
@@ -264,7 +298,7 @@ function UploadForm({ onUpload, isPending, error }) {
 
           <button
             type="submit"
-            disabled={!file || isPending}
+            disabled={!file || !purpose || isPending}
             className="inline-flex w-full items-center justify-center gap-2 rounded-sm bg-[#14243d] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending ? (
@@ -436,8 +470,19 @@ function MediaCard({
           </div>
         )}
 
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-2">
           <StatusBadge status={asset.status} />
+
+          <span className="inline-flex rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-[#344054] shadow-sm">
+            {{
+              article: "Article",
+              affiliate: "Affiliate",
+              advertisement: "Advertisement",
+              avatar: "Profile picture",
+              favicon: "Favicon",
+              logo: "Website logo",
+            }[asset.purpose] || "Unclassified"}
+          </span>
         </div>
       </div>
 
@@ -515,6 +560,7 @@ function MediaCard({
 
 export default function MediaManagement({ role }) {
   const [status, setStatus] = useState("");
+  const [purpose, setPurpose] = useState("");
   const [page, setPage] = useState(1);
   const [editingAsset, setEditingAsset] = useState(null);
   const [actionError, setActionError] = useState("");
@@ -524,10 +570,11 @@ export default function MediaManagement({ role }) {
   const filters = useMemo(
     () => ({
       status: status || undefined,
+      purpose: purpose || undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [status, page],
+    [status, purpose, page],
   );
 
   const mediaQuery = useMedia(filters);
@@ -549,6 +596,12 @@ export default function MediaManagement({ role }) {
 
   function updateStatus(value) {
     setStatus(value);
+    setPage(1);
+    setActionError("");
+  }
+
+  function updatePurpose(value) {
+    setPurpose(value);
     setPage(1);
     setActionError("");
   }
@@ -652,20 +705,46 @@ export default function MediaManagement({ role }) {
               </p>
             </div>
 
-            <label className="block sm:min-w-52">
-              <span className="sr-only">Filter media by status</span>
-              <select
-                value={status}
-                onChange={(event) => updateStatus(event.target.value)}
-                className="w-full rounded-sm border border-[#e3e5e9] bg-white px-3 py-3 text-xs text-[#26354a] outline-none focus:border-[#b99658]"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block sm:min-w-44">
+                <span className="sr-only">Filter media by status</span>
+                <select
+                  value={status}
+                  onChange={(event) => updateStatus(event.target.value)}
+                  className="w-full rounded-sm border border-[#e3e5e9] bg-white px-3 py-3 text-xs text-[#26354a] outline-none focus:border-[#b99658]"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block sm:min-w-44">
+                <span className="sr-only">Filter media by purpose</span>
+                <select
+                  value={purpose}
+                  onChange={(event) => updatePurpose(event.target.value)}
+                  className="w-full rounded-sm border border-[#e3e5e9] bg-white px-3 py-3 text-xs text-[#26354a] outline-none focus:border-[#b99658]"
+                >
+                  <option value="">All purposes</option>
+                  {mediaPurposeFilters.map((value) => (
+                    <option key={value} value={value}>
+                      {{
+                        article: "Article",
+                        affiliate: "Affiliate campaign",
+                        advertisement: "Advertisement",
+                        avatar: "Profile picture",
+                        favicon: "Favicon",
+                        logo: "Website logo",
+                        unclassified: "Unclassified",
+                      }[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           {mediaQuery.isFetching && !mediaQuery.isPending && (
@@ -707,13 +786,13 @@ export default function MediaManagement({ role }) {
               <div className="border border-[#e8e9ed] bg-white px-6 py-16 text-center">
                 <Images size={30} className="mx-auto text-[#b99658]" />
                 <h3 className="mt-4 text-sm font-semibold text-[#14243d]">
-                  {status
-                    ? "No images match this status"
+                  {status || purpose
+                    ? "No images match these filters"
                     : "Your media library is empty"}
                 </h3>
                 <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-gray-500">
-                  {status
-                    ? "Try another status filter or upload a new image."
+                  {status || purpose
+                    ? "Try changing the status or purpose filters, or upload a new image."
                     : "Upload your first image above. It will appear here for editorial review."}
                 </p>
               </div>
@@ -803,3 +882,10 @@ export default function MediaManagement({ role }) {
     </div>
   );
 }
+
+
+
+
+
+
+

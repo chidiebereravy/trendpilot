@@ -5,6 +5,7 @@ import { CalendarClock, Edit3, Megaphone, Plus, Search, X } from "lucide-react";
 
 import {
   useCampaigns,
+  useAdPlacements,
   useCreateCampaign,
   useUpdateCampaign,
 } from "@/features/advertising/queries/advertising.queries";
@@ -24,9 +25,15 @@ const restrictedStatuses = ["active", "rejected"];
 
 const initialForm = {
   name: "",
+  placement_ids: [],
   campaign_type: "direct",
   channel: "display",
   objective: "",
+  headline: "",
+  description: "",
+  image_url: "",
+  image_alt_text: "",
+  call_to_action_text: "",
   destination_url: "",
   status: "draft",
   starts_at: "",
@@ -92,6 +99,7 @@ export default function CampaignManagement({ isAdmin = false }) {
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [placementsChanged, setPlacementsChanged] = useState(false);
 
   const queryFilters = useMemo(
     () => ({
@@ -103,6 +111,10 @@ export default function CampaignManagement({ isAdmin = false }) {
   );
 
   const campaignsQuery = useCampaigns(queryFilters);
+  const placementsQuery = useAdPlacements(
+    { status: "active", page: 1, pageSize: 50 },
+    formOpen,
+  );
   const createMutation = useCreateCampaign();
   const updateMutation = useUpdateCampaign();
 
@@ -111,16 +123,24 @@ export default function CampaignManagement({ isAdmin = false }) {
 
   function openCreate() {
     setEditingId(null);
+    setPlacementsChanged(false);
     setForm(initialForm);
     setFormOpen(true);
   }
 
   function openEdit(campaign) {
     setEditingId(campaign.id);
+    setPlacementsChanged(false);
     setForm({
+      placement_ids: campaign.placement_ids ?? [],
       name: campaign.name || "",
       campaign_type: campaign.campaign_type || "direct",
       channel: campaign.channel || "display",
+      headline: campaign.headline || "",
+      description: campaign.description || "",
+      image_url: campaign.image_url || "",
+      image_alt_text: campaign.image_alt_text || "",
+      call_to_action_text: campaign.call_to_action_text || "",
       objective: campaign.objective || "",
       destination_url: campaign.destination_url || "",
       status: campaign.status || "draft",
@@ -133,6 +153,7 @@ export default function CampaignManagement({ isAdmin = false }) {
   function closeForm() {
     setFormOpen(false);
     setEditingId(null);
+    setPlacementsChanged(false);
     setForm(initialForm);
     createMutation.reset();
     updateMutation.reset();
@@ -145,14 +166,32 @@ export default function CampaignManagement({ isAdmin = false }) {
     }));
   }
 
+  function togglePlacement(placementId) {
+    setPlacementsChanged(true);
+    setForm((current) => ({
+      ...current,
+      placement_ids: current.placement_ids.includes(placementId)
+        ? current.placement_ids.filter((id) => id !== placementId)
+        : [...current.placement_ids, placementId],
+    }));
+  }
+
   async function submitForm(event) {
     event.preventDefault();
 
     const payload = {
+      ...(!editingId || placementsChanged
+        ? { placement_ids: form.placement_ids }
+        : {}),
       name: form.name.trim(),
       campaign_type: form.campaign_type,
       channel: form.channel,
       objective: form.objective.trim() || null,
+      headline: form.headline.trim() || null,
+      description: form.description.trim() || null,
+      image_url: form.image_url.trim() || null,
+      image_alt_text: form.image_alt_text.trim() || null,
+      call_to_action_text: form.call_to_action_text.trim() || null,
       destination_url: form.destination_url.trim() || null,
       ...(isAdmin || !restrictedStatuses.includes(form.status)
         ? { status: form.status }
@@ -189,6 +228,7 @@ export default function CampaignManagement({ isAdmin = false }) {
   }
 
   const campaigns = campaignsQuery.data?.items ?? [];
+  const placements = placementsQuery.data?.items ?? [];
   const formError = mutation.error;
 
   return (
@@ -340,6 +380,146 @@ export default function CampaignManagement({ isAdmin = false }) {
             </div>
 
             <div className="sm:col-span-2 lg:col-span-3">
+              <div className="border-t border-slate-200 pt-4">
+                <h4 className="text-sm font-semibold text-[#14243d]">
+                  Ad placements
+                </h4>
+                <p className="mt-1 text-xs text-slate-500">
+                  Choose where this campaign can appear. Only active placements
+                  are available.
+                </p>
+
+                <p className="mt-2 text-xs font-medium text-slate-600">
+                  {form.placement_ids.length} placement(s) selected
+                </p>
+
+                {placementsQuery.isLoading ? (
+                  <p className="mt-3 text-sm text-slate-500">
+                    Loading available placements...
+                  </p>
+                ) : placementsQuery.isError ? (
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    Available placements could not be loaded. Please close and
+                    reopen the form to retry.
+                  </p>
+                ) : placements.length === 0 ? (
+                  <p className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-500">
+                    No active placements are available. You can create
+                    placements in Placement Management.
+                  </p>
+                ) : (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {placements.map((placement) => (
+                      <label
+                        key={placement.id}
+                        className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-[#c4a16a]"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.placement_ids.includes(placement.id)}
+                          onChange={() => togglePlacement(placement.id)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 accent-[#14243d]"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-slate-700">
+                            {placement.name}
+                          </span>
+                          <span className="mt-0.5 block text-xs break-all text-slate-500">
+                            {placement.placement_key}
+                          </span>
+                          <span className="mt-1 block text-xs text-slate-400 capitalize">
+                            {placement.position?.replaceAll("_", " ")} ·{" "}
+                            {placement.format?.replaceAll("_", " ")}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {editingId &&
+                  !placementsChanged &&
+                  form.placement_ids.some(
+                    (id) =>
+                      !placements.some((placement) => placement.id === id),
+                  ) && (
+                    <p className="mt-3 text-xs text-amber-700">
+                      This campaign has existing inactive placements. They will
+                      remain assigned unless you change the selection.
+                    </p>
+                  )}
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 lg:col-span-3">
+              <div className="border-t border-slate-200 pt-4 sm:col-span-2 lg:col-span-3">
+                <h4 className="text-sm font-semibold text-[#14243d]">
+                  Ad creative
+                </h4>
+                <p className="mt-1 text-xs text-slate-500">
+                  Define the content visitors will see in this advertisement.
+                </p>
+              </div>
+
+              <Field label="Advertiser headline">
+                <input
+                  className={inputClass}
+                  name="headline"
+                  value={form.headline}
+                  onChange={changeField}
+                  maxLength={160}
+                  placeholder="e.g. Discover a better way to invest"
+                />
+              </Field>
+
+              <div className="sm:col-span-2">
+                <Field label="Advertisement description">
+                  <textarea
+                    className={inputClass}
+                    name="description"
+                    value={form.description}
+                    onChange={changeField}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Write a short description of the advertiser's offer..."
+                  />
+                </Field>
+              </div>
+
+              <Field label="Advertisement image URL">
+                <input
+                  className={inputClass}
+                  type="url"
+                  name="image_url"
+                  value={form.image_url}
+                  onChange={changeField}
+                  maxLength={2048}
+                  placeholder="https://example.com/ad-image.jpg"
+                />
+              </Field>
+
+              <Field label="Image alt text">
+                <input
+                  className={inputClass}
+                  name="image_alt_text"
+                  value={form.image_alt_text}
+                  onChange={changeField}
+                  maxLength={300}
+                  placeholder="Describe the advertisement image"
+                />
+              </Field>
+
+              <Field label="Call-to-action text">
+                <input
+                  className={inputClass}
+                  name="call_to_action_text"
+                  value={form.call_to_action_text}
+                  onChange={changeField}
+                  maxLength={40}
+                  placeholder="e.g. Learn more, Shop now, Get started"
+                />
+              </Field>
+
               <Field label="Destination URL">
                 <input
                   className={inputClass}
@@ -478,6 +658,9 @@ export default function CampaignManagement({ isAdmin = false }) {
                     {campaign.updated_at
                       ? new Date(campaign.updated_at).toLocaleDateString()
                       : "—"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {campaign.placement_ids?.length ?? 0} placement(s) assigned
                   </p>
                   {campaign.starts_at && (
                     <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">

@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 const optionalText = (max) => z.string().trim().max(max).nullable().optional();
 
@@ -13,6 +13,22 @@ const campaignFields = {
   campaign_type: z.enum(["network", "direct", "sponsored", "house"]),
   channel: z.enum(["display", "native", "sponsored_content", "email", "other"]),
   objective: optionalText(500),
+  headline: optionalText(160),
+  description: optionalText(1000),
+  image_url: z
+    .string()
+    .trim()
+    .url()
+    .max(2048)
+    .refine(
+      (value) => /^https:\/\//i.test(value),
+      "Advertisement image URLs must use HTTPS.",
+    )
+    .nullable()
+    .optional(),
+  image_media_asset_id: z.string().uuid().nullable().optional(),
+  image_alt_text: optionalText(300),
+  call_to_action_text: optionalText(40),
   destination_url: z
     .string()
     .trim()
@@ -41,6 +57,14 @@ const campaignFields = {
 };
 
 function validateCampaignDates(value, context) {
+  if (value.image_media_asset_id && value.image_url) {
+    context.addIssue({
+      code: "custom",
+      path: ["image_media_asset_id"],
+      message: "Choose either a Media Library image or an external image URL, not both.",
+    });
+  }
+
   if (
     value.starts_at &&
     value.ends_at &&
@@ -54,8 +78,18 @@ function validateCampaignDates(value, context) {
   }
 }
 
+const campaignPlacementIdsSchema = z
+  .array(z.string().uuid())
+  .max(50)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: "A placement cannot be assigned more than once.",
+  });
+
 export const createCampaignSchema = z
-  .object(campaignFields)
+  .object({
+    ...campaignFields,
+    placement_ids: campaignPlacementIdsSchema.optional(),
+  })
   .strict()
   .superRefine(validateCampaignDates);
 
@@ -67,6 +101,7 @@ export const updateCampaignSchema = z
         value.optional(),
       ]),
     ),
+    placement_ids: campaignPlacementIdsSchema.optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, {
@@ -289,3 +324,4 @@ export const placementFiltersSchema = z.object({
   page: z.coerce.number().int().min(1).max(10000).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
+

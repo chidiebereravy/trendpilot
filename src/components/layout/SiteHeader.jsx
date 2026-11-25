@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Search } from "lucide-react";
+
 import { useAuthSession, useLogout } from "@/features/auth/hooks/useAuth";
 
 const navigation = [
@@ -16,6 +17,14 @@ const navigation = [
   { label: "Innovation", href: "/category/innovation" },
   { label: "About", href: "/about" },
 ];
+
+function isActiveLink(pathname, href) {
+  if (href === "/") {
+    return pathname === "/";
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 function AuthLinks({ session, onNavigate, onLogout, logoutPending }) {
   if (session) {
@@ -32,13 +41,14 @@ function AuthLinks({ session, onNavigate, onLogout, logoutPending }) {
         >
           {accountLabel}
         </span>
+
         <button
           type="button"
           onClick={onLogout}
           disabled={logoutPending}
-          className="inline-flex items-center justify-center gap-2 rounded-sm border border-[#dfe2e8] px-4 py-2.5 text-xs font-semibold text-[#26354a] transition hover:border-[#b99658] hover:text-[#98743d] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-[#dfe2e8] px-4 py-2.5 text-xs font-semibold text-[#26354a] transition hover:border-[#b99658] hover:text-[#98743d] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <LogOut size={15} />
+          <LogOut size={15} aria-hidden="true" />
           {logoutPending ? "Signing out..." : "Sign out"}
         </button>
       </div>
@@ -54,10 +64,11 @@ function AuthLinks({ session, onNavigate, onLogout, logoutPending }) {
       >
         Sign in
       </Link>
+
       <Link
         href="/auth/register"
         onClick={onNavigate}
-        className="rounded-sm bg-[#14243d] px-4 py-2.5 text-center text-xs font-semibold text-white transition hover:bg-[#203653]"
+        className="rounded-sm bg-[#14243d] px-4 py-2.5 text-center text-xs font-semibold !text-white transition hover:bg-[#203653]"
       >
         Create account
       </Link>
@@ -65,31 +76,75 @@ function AuthLinks({ session, onNavigate, onLogout, logoutPending }) {
   );
 }
 
+function NavigationLink({ item, pathname, mobile = false, onClick }) {
+  const active = isActiveLink(pathname, item.href);
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={
+        mobile
+          ? active
+            ? "rounded-md bg-[#f5f1e8] px-3 py-3 text-sm font-bold text-[#98743d] ring-1 ring-[#d5b77e]/30"
+            : "rounded-md px-3 py-3 text-sm font-semibold text-[#4b5563] transition-colors duration-200 hover:bg-[#f7f8fa] hover:text-[#98743d]"
+          : `nav-link ${active ? "active" : ""}`
+      }
+    >
+      {item.label}
+    </Link>
+  );
+}
+
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
+
   const { data: session } = useAuthSession();
   const logout = useLogout();
 
+  {
+    navigation.map((item) => (
+      <NavigationLink
+        key={item.href}
+        item={item}
+        pathname={pathname}
+        mobile
+        onClick={() => setMenuOpen(false)}
+      />
+    ));
+  }
+
   useEffect(() => {
-    function handleRouteChange() {
-      setMenuOpen(false);
+    if (!menuOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
     }
-    handleRouteChange();
-  }, [pathname]);
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
   function handleLogout() {
     logout.mutate(undefined, {
       onSuccess: () => {
-        setMenuOpen(false);
+        closeMenu();
         router.refresh();
       },
     });
-  }
-
-  function closeMenu() {
-    setMenuOpen(false);
   }
 
   if (pathname.includes("/auth")) {
@@ -100,6 +155,7 @@ export default function SiteHeader() {
     <header className="site-header sticky top-0 z-50">
       <div className="container-main">
         <div className="flex min-h-[76px] items-center justify-between gap-4">
+          {/* Brand */}
           <Link
             href="/"
             className="brand shrink-0"
@@ -109,29 +165,29 @@ export default function SiteHeader() {
             TrendPilot<span className="brand-dot">.</span>
           </Link>
 
+          {/* Desktop navigation */}
           <nav
             aria-label="Main navigation"
             className="hidden items-center gap-5 xl:flex"
           >
             {navigation.map((item) => (
-              <Link key={item.label} href={item.href} className="nav-link">
-                {item.label}
-              </Link>
+              <NavigationLink key={item.href} item={item} pathname={pathname} />
             ))}
           </nav>
 
+          {/* Header actions */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/search"
               aria-label="Search articles"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:border-[#b99658] hover:text-[#b99658]"
             >
-              <Search size={18} />
+              <Search size={18} aria-hidden="true" />
             </Link>
 
             <Link
               href="/newsletter"
-              className="hidden rounded-sm bg-[#14243d] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#203653] sm:block"
+              className="hidden rounded-sm bg-[#14243d] px-4 py-3 text-xs font-semibold !text-white transition hover:bg-[#203653] sm:block"
             >
               Subscribe
             </Link>
@@ -145,6 +201,7 @@ export default function SiteHeader() {
               />
             </div>
 
+            {/* Mobile menu toggle */}
             <button
               type="button"
               aria-label={
@@ -153,19 +210,21 @@ export default function SiteHeader() {
               aria-expanded={menuOpen}
               aria-controls="mobile-navigation"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-[#14243d] transition-colors duration-200 hover:border-[#b99658] hover:text-[#98743d] xl:hidden"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-gray-200 text-[#14243d] transition-colors duration-200 hover:border-[#b99658] hover:text-[#98743d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b99658] xl:hidden"
             >
-              <span className="relative block h-5 w-5">
+              <span className="relative block h-5 w-5" aria-hidden="true">
                 <span
                   className={`absolute top-1/2 left-0 h-0.5 w-5 -translate-y-1/2 rounded-full bg-current transition-transform duration-300 ease-in-out ${
                     menuOpen ? "rotate-45" : "-translate-y-[7px]"
                   }`}
                 />
+
                 <span
                   className={`absolute top-1/2 left-0 h-0.5 w-5 -translate-y-1/2 rounded-full bg-current transition-opacity duration-200 ease-in-out ${
                     menuOpen ? "opacity-0" : "opacity-100"
                   }`}
                 />
+
                 <span
                   className={`absolute top-1/2 left-0 h-0.5 w-5 -translate-y-1/2 rounded-full bg-current transition-transform duration-300 ease-in-out ${
                     menuOpen ? "-rotate-45" : "translate-y-[7px]"
@@ -176,56 +235,59 @@ export default function SiteHeader() {
           </div>
         </div>
 
+        {/* Mobile navigation overlay */}
         <div
           id="mobile-navigation"
           aria-hidden={!menuOpen}
           inert={!menuOpen}
-          className={`overflow-hidden border-t border-gray-100 transition-[max-height,opacity,transform] duration-300 ease-in-out xl:hidden ${
+          className={`absolute inset-x-0 top-full z-50 w-full overflow-hidden border-t border-gray-100 bg-white shadow-xl transition-[max-height,opacity,transform] duration-300 ease-in-out xl:hidden ${
             menuOpen
               ? "max-h-[620px] translate-y-0 py-4 opacity-100"
               : "pointer-events-none max-h-0 -translate-y-2 py-0 opacity-0"
           }`}
         >
-          <nav
-            aria-label="Mobile navigation"
-            className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-3"
-          >
-            {navigation.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={closeMenu}
-                className="rounded-md px-3 py-3 text-sm font-semibold text-[#4b5563] transition-colors duration-200 hover:bg-[#f7f8fa] hover:text-[#98743d]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <div className="container-main">
+            <nav
+              aria-label="Mobile navigation"
+              className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-3"
+            >
+              {navigation.map((item) => (
+                <NavigationLink
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  onClick={closeMenu}
+                  mobile
+                />
+              ))}
+            </nav>
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-3 sm:hidden">
-              <Link
-                href="/newsletter"
-                onClick={closeMenu}
-                className="flex-1 rounded-sm bg-[#14243d] px-4 py-3 text-center text-xs font-semibold text-white transition hover:bg-[#203653]"
-              >
-                Subscribe
-              </Link>
-              <Link
-                href="/search"
-                onClick={closeMenu}
-                className="flex-1 rounded-sm border border-[#dfe2e8] px-4 py-3 text-center text-xs font-semibold text-[#26354a] transition hover:border-[#b99658]"
-              >
-                Search
-              </Link>
+            <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-3 sm:hidden">
+                <Link
+                  href="/newsletter"
+                  onClick={closeMenu}
+                  className="flex-1 rounded-sm bg-[#14243d] px-4 py-3 text-center text-xs font-semibold !text-white transition hover:bg-[#203653]"
+                >
+                  Subscribe
+                </Link>
+
+                <Link
+                  href="/search"
+                  onClick={closeMenu}
+                  className="flex-1 rounded-sm border border-[#dfe2e8] px-4 py-3 text-center text-xs font-semibold text-[#26354a] transition hover:border-[#b99658]"
+                >
+                  Search
+                </Link>
+              </div>
+
+              <AuthLinks
+                session={session}
+                onNavigate={closeMenu}
+                onLogout={handleLogout}
+                logoutPending={logout.isPending}
+              />
             </div>
-
-            <AuthLinks
-              session={session}
-              onNavigate={closeMenu}
-              onLogout={handleLogout}
-              logoutPending={logout.isPending}
-            />
           </div>
         </div>
       </div>

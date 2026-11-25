@@ -17,6 +17,10 @@ const programFields = [
   "default_currency",
   "status",
   "notes",
+  "description",
+  "commission_details",
+  "eligibility_details",
+  "cover_image_id",
   "created_by",
   "updated_by",
   "created_at",
@@ -40,6 +44,14 @@ function handleDatabaseError(error) {
       "The program contains information that violates a database rule.",
       422,
       "AFFILIATE_PROGRAM_RULE_VIOLATION",
+    );
+  }
+
+  if (error.code === "23503") {
+    throw new AuthError(
+      "The selected campaign cover image is invalid or unavailable.",
+      422,
+      "INVALID_AFFILIATE_PROGRAM_REFERENCE",
     );
   }
 
@@ -98,7 +110,7 @@ export async function PATCH(request, { params }) {
     return successResponse(
       data,
       200,
-      "Affiliate program updated successfully.",
+      "Affiliate campaign updated successfully.",
     );
   } catch (error) {
     return handleApiError(error);

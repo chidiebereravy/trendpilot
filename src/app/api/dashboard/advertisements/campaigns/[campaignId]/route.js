@@ -1,12 +1,51 @@
-﻿import { AuthError, requireRole } from "@/lib/auth/session";
+import { AuthError, requireRole } from "@/lib/auth/session";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { handleApiError, successResponse } from "@/lib/api/response";
 import { assertSameOrigin, readValidatedBody } from "@/lib/api/request";
 import { updateCampaignSchema } from "@/features/advertising/schemas/advertising.schema";
 
 const EDITOR_FIELDS =
-  "id, name, campaign_type, channel, objective, destination_url, status, starts_at, ends_at, created_at, updated_at";
+  "id, name, campaign_type, channel, objective, headline, description, image_url, image_media_asset_id, image_alt_text, call_to_action_text, destination_url, status, starts_at, ends_at, created_at, updated_at";
 
 const ADMIN_FIELDS = `${EDITOR_FIELDS}, advertiser_id, network_connection_id`;
+const MEDIA_ASSET_FIELDS =
+  "id, bucket_id, object_path, original_filename, mime_type, width, height, purpose, alt_text, caption, status";
+
+async function attachCampaignMediaPreview(campaign, adminClient) {
+  if (!campaign?.image_media_asset_id) {
+    return {
+      ...campaign,
+      image_media_asset: null,
+    };
+  }
+
+  const { data: asset, error } = await adminClient
+    .from("media_assets")
+    .select(MEDIA_ASSET_FIELDS)
+    .eq("id", campaign.image_media_asset_id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (!asset) {
+    return {
+      ...campaign,
+      image_media_asset: null,
+    };
+  }
+
+  const { data } = adminClient.storage
+    .from(asset.bucket_id)
+    .getPublicUrl(asset.object_path);
+
+  return {
+    ...campaign,
+    image_media_asset: {
+      ...asset,
+      preview_url: data?.publicUrl ?? null,
+    },
+  };
+}
 
 async function validateAdminAssociations(supabase, values) {
   if (values.advertiser_id) {
@@ -94,8 +133,10 @@ export async function PATCH(request, { params }) {
       await validateAdminAssociations(supabase, values);
     }
 
+    const { placement_ids: placementIds, ...campaignValues } = values;
+
     const payload = {
-      ...values,
+      ...campaignValues,
       updated_by: user.id,
     };
 
@@ -106,18 +147,54 @@ export async function PATCH(request, { params }) {
       .select(profile.role === "admin" ? ADMIN_FIELDS : EDITOR_FIELDS)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23514" || error.code === "23503") {
+        throw new AuthError(
+          "The selected campaign image is invalid or is not a published advertisement image in the Media Library.",
+          422,
+          "INVALID_CAMPAIGN_MEDIA",
+        );
+      }
 
-    if (!data) {
-      throw new AuthError(
-        "The campaign was not found or could not be updated.",
-        404,
-        "CAMPAIGN_NOT_FOUND",
-      );
+      throw error;
     }
 
-    return successResponse(data, 200, "Campaign updated successfully.");
+    if (placementIds !== undefined) {
+      const adminSupabase = createSupabaseAdminClient();
+
+      const { error: placementError } = await adminSupabase.rpc(
+        "replace_ad_campaign_placements",
+        {
+          p_campaign_id: campaignId,
+          p_placement_ids: placementIds,
+        },
+      );
+
+      if (placementError) {
+        console.error("Campaign placement assignment failed:", placementError);
+
+        throw new AuthError(
+          "Campaign details were updated, but placement assignments could not be saved. Please retry the placement update.",
+          422,
+          "CAMPAIGN_PLACEMENT_ASSIGNMENT_FAILED",
+        );
+      }
+    }
+
+    const campaignWithMedia = await attachCampaignMediaPreview(
+      data,
+      createSupabaseAdminClient(),
+    );
+
+    return successResponse(
+      campaignWithMedia,
+      200,
+      "Campaign updated successfully.",
+    );
   } catch (error) {
     return handleApiError(error);
   }
 }
+
+
+

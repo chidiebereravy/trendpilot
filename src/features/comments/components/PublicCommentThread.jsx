@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+
 import Link from "next/link";
 import {
   ChevronDown,
@@ -16,6 +17,18 @@ import { useCreateArticleComment } from "@/features/comments/mutations/public-co
 import { useArticleComments } from "@/features/comments/queries/public-comment.queries";
 import { useCommentReplies } from "@/features/comments/queries/comment-replies.queries";
 import { formatDate } from "@/lib/utils";
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+function getClientHydrationSnapshot() {
+  return true;
+}
+
+function getServerHydrationSnapshot() {
+  return false;
+}
 
 function getErrorMessage(error) {
   return (
@@ -35,6 +48,12 @@ function CommentComposer({
 }) {
   const [content, setContent] = useState("");
 
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
+
   function handleSubmit(event) {
     event.preventDefault();
 
@@ -53,7 +72,7 @@ function CommentComposer({
     );
   }
 
-  if (sessionLoading) {
+  if (!isHydrated || sessionLoading) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
         <LoaderCircle size={15} className="animate-spin" />
@@ -125,7 +144,7 @@ function CommentComposer({
             : "What did you think about this article?"
         }
         required
-        className="w-full resize-y rounded-md border border-[#e3e5e9] bg-white px-4 py-3 text-sm leading-6 text-[#26354a] transition outline-none placeholder:text-gray-400 focus:border-[#b99658] focus:ring-2 focus:ring-[#b99658]/10"
+        className="max-h-24 min-h-24 w-full resize-y rounded-md border border-[#e3e5e9] bg-white px-4 py-3 text-sm leading-6 text-[#26354a] transition outline-none placeholder:text-gray-400 focus:border-[#b99658] focus:ring-2 focus:ring-[#b99658]/10"
       />
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

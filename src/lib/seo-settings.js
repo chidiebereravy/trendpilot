@@ -100,7 +100,7 @@ export async function getPublicSeoSettings() {
       ...data,
     };
   } catch (error) {
-    console.error("Public SEO settings query failed:", error);
+    // console.error("Public SEO settings query failed:", error);
 
     return {
       ...DEFAULT_SEO_SETTINGS,
