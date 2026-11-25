@@ -1,7 +1,15 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, Edit3, Megaphone, Plus, Search, X } from "lucide-react";
+import {
+  CalendarClock,
+  Edit3,
+  ImagePlus,
+  Megaphone,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 
 import {
   useCampaigns,
@@ -9,6 +17,8 @@ import {
   useCreateCampaign,
   useUpdateCampaign,
 } from "@/features/advertising/queries/advertising.queries";
+import { useMedia } from "@/features/media/queries/media.queries";
+import Image from "next/image";
 
 const statuses = [
   "draft",
@@ -31,6 +41,8 @@ const initialForm = {
   objective: "",
   headline: "",
   description: "",
+  image_media_asset_id: "",
+  image_media_asset: null,
   image_url: "",
   image_alt_text: "",
   call_to_action_text: "",
@@ -100,6 +112,9 @@ export default function CampaignManagement({ isAdmin = false }) {
   const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [placementsChanged, setPlacementsChanged] = useState(false);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [imageSearch, setImageSearch] = useState("");
+  const [imagePage, setImagePage] = useState(1);
 
   const queryFilters = useMemo(
     () => ({
@@ -115,6 +130,17 @@ export default function CampaignManagement({ isAdmin = false }) {
     { status: "active", page: 1, pageSize: 50 },
     formOpen,
   );
+
+  const mediaQuery = useMedia(
+    {
+      purpose: "advertisement",
+      status: "published",
+      page: imagePage,
+      pageSize: 50,
+    },
+    formOpen || imagePickerOpen,
+  );
+
   const createMutation = useCreateCampaign();
   const updateMutation = useUpdateCampaign();
 
@@ -124,6 +150,9 @@ export default function CampaignManagement({ isAdmin = false }) {
   function openCreate() {
     setEditingId(null);
     setPlacementsChanged(false);
+    setImagePickerOpen(false);
+    setImageSearch("");
+    setImagePage(1);
     setForm(initialForm);
     setFormOpen(true);
   }
@@ -131,6 +160,10 @@ export default function CampaignManagement({ isAdmin = false }) {
   function openEdit(campaign) {
     setEditingId(campaign.id);
     setPlacementsChanged(false);
+    setImagePickerOpen(false);
+    setImageSearch("");
+    setImagePage(1);
+
     setForm({
       placement_ids: campaign.placement_ids ?? [],
       name: campaign.name || "",
@@ -138,6 +171,8 @@ export default function CampaignManagement({ isAdmin = false }) {
       channel: campaign.channel || "display",
       headline: campaign.headline || "",
       description: campaign.description || "",
+      image_media_asset_id: campaign.image_media_asset_id || "",
+      image_media_asset: campaign.image_media_asset || null,
       image_url: campaign.image_url || "",
       image_alt_text: campaign.image_alt_text || "",
       call_to_action_text: campaign.call_to_action_text || "",
@@ -147,6 +182,7 @@ export default function CampaignManagement({ isAdmin = false }) {
       starts_at: localDateValue(campaign.starts_at),
       ends_at: localDateValue(campaign.ends_at),
     });
+
     setFormOpen(true);
   }
 
@@ -154,15 +190,46 @@ export default function CampaignManagement({ isAdmin = false }) {
     setFormOpen(false);
     setEditingId(null);
     setPlacementsChanged(false);
+    setImagePickerOpen(false);
+    setImageSearch("");
+    setImagePage(1);
     setForm(initialForm);
     createMutation.reset();
     updateMutation.reset();
   }
 
   function changeField(event) {
+    const { name, value } = event.target;
+
     setForm((current) => ({
       ...current,
-      [event.target.name]: event.target.value,
+      [name]: value,
+      ...(name === "image_url" && value.trim()
+        ? {
+            image_media_asset_id: "",
+            image_media_asset: null,
+          }
+        : {}),
+    }));
+  }
+
+  function selectMediaAsset(asset) {
+    setForm((current) => ({
+      ...current,
+      image_media_asset_id: asset.id,
+      image_media_asset: asset,
+      image_url: "",
+      image_alt_text: asset.alt_text || current.image_alt_text,
+    }));
+
+    setImagePickerOpen(false);
+  }
+
+  function removeMediaAsset() {
+    setForm((current) => ({
+      ...current,
+      image_media_asset_id: "",
+      image_media_asset: null,
     }));
   }
 
@@ -189,6 +256,7 @@ export default function CampaignManagement({ isAdmin = false }) {
       objective: form.objective.trim() || null,
       headline: form.headline.trim() || null,
       description: form.description.trim() || null,
+      image_media_asset_id: form.image_media_asset_id || null,
       image_url: form.image_url.trim() || null,
       image_alt_text: form.image_alt_text.trim() || null,
       call_to_action_text: form.call_to_action_text.trim() || null,
@@ -229,7 +297,17 @@ export default function CampaignManagement({ isAdmin = false }) {
 
   const campaigns = campaignsQuery.data?.items ?? [];
   const placements = placementsQuery.data?.items ?? [];
+  const mediaItems = mediaQuery.data?.items ?? [];
+  const mediaPagination = mediaQuery.data?.pagination;
   const formError = mutation.error;
+
+  const filteredMedia = mediaItems.filter((asset) =>
+    asset.original_filename
+      ?.toLowerCase()
+      .includes(imageSearch.trim().toLowerCase()),
+  );
+
+  const selectedMedia = form.image_media_asset;
 
   return (
     <div className="space-y-5">
@@ -452,7 +530,7 @@ export default function CampaignManagement({ isAdmin = false }) {
             </div>
 
             <div className="sm:col-span-2 lg:col-span-3">
-              <div className="border-t border-slate-200 pt-4 sm:col-span-2 lg:col-span-3">
+              <div className="border-t border-slate-200 pt-4">
                 <h4 className="text-sm font-semibold text-[#14243d]">
                   Ad creative
                 </h4>
@@ -461,18 +539,18 @@ export default function CampaignManagement({ isAdmin = false }) {
                 </p>
               </div>
 
-              <Field label="Advertiser headline">
-                <input
-                  className={inputClass}
-                  name="headline"
-                  value={form.headline}
-                  onChange={changeField}
-                  maxLength={160}
-                  placeholder="e.g. Discover a better way to invest"
-                />
-              </Field>
+              <div className="mt-4 space-y-4">
+                <Field label="Advertiser headline">
+                  <input
+                    className={inputClass}
+                    name="headline"
+                    value={form.headline}
+                    onChange={changeField}
+                    maxLength={160}
+                    placeholder="e.g. Discover a better way to invest"
+                  />
+                </Field>
 
-              <div className="sm:col-span-2">
                 <Field label="Advertisement description">
                   <textarea
                     className={inputClass}
@@ -484,53 +562,249 @@ export default function CampaignManagement({ isAdmin = false }) {
                     placeholder="Write a short description of the advertiser's offer..."
                   />
                 </Field>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">
+                        Advertisement image
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Choose a published advertisement image or use an
+                        external image URL.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setImagePickerOpen((open) => !open)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a]"
+                    >
+                      <ImagePlus size={14} />
+                      Browse media library
+                    </button>
+                  </div>
+
+                  {form.image_url ? (
+                    <div className="mt-4">
+                      <p className="text-xs font-semibold text-slate-600">
+                        External image URL selected
+                      </p>
+                      <p className="mt-1 text-xs break-all text-slate-500">
+                        {form.image_url}
+                      </p>
+                    </div>
+                  ) : selectedMedia ? (
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <div className="h-28 w-full overflow-hidden rounded-lg bg-slate-100 sm:w-44">
+                        {selectedMedia.preview_url ? (
+                          <Image
+                            src={selectedMedia.preview_url}
+                            alt={
+                              selectedMedia.alt_text ||
+                              selectedMedia.original_filename
+                            }
+                            height={100}
+                            width={100}
+                            priority
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                            Preview unavailable
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-700">
+                          {selectedMedia.original_filename}
+                        </p>
+                        <p className="mt-1 text-xs text-emerald-700">
+                          Published advertisement image
+                        </p>
+                        <button
+                          type="button"
+                          onClick={removeMediaAsset}
+                          className="mt-3 text-xs font-semibold text-red-600 hover:text-red-700"
+                        >
+                          Remove selected image
+                        </button>
+                      </div>
+                    </div>
+                  ) : form.image_media_asset_id ? (
+                    <p className="mt-3 text-xs text-amber-700">
+                      The previously selected image preview is unavailable.
+                      Choose another image or remove the selection.
+                    </p>
+                  ) : (
+                    <p className="mt-3 text-xs text-slate-400">
+                      No advertisement image selected.
+                    </p>
+                  )}
+
+                  {imagePickerOpen && (
+                    <div className="mt-4 border-t border-slate-200 pt-4">
+                      <input
+                        className={inputClass}
+                        value={imageSearch}
+                        onChange={(event) => {
+                          setImageSearch(event.target.value);
+                          setImagePage(1);
+                        }}
+                        placeholder="Search advertisement images..."
+                      />
+
+                      {mediaQuery.isLoading ? (
+                        <p className="py-5 text-center text-xs text-slate-400">
+                          Loading published advertisement images...
+                        </p>
+                      ) : mediaQuery.isError ? (
+                        <div className="py-4 text-xs text-red-600">
+                          {errorMessage(mediaQuery.error)}
+                        </div>
+                      ) : filteredMedia.length === 0 ? (
+                        <div className="py-5 text-center">
+                          <p className="text-xs text-slate-500">
+                            No published advertisement images found.
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Upload and publish an image with the advertisement
+                            purpose in Media Library.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-3 grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+                          {filteredMedia.map((asset) => (
+                            <button
+                              type="button"
+                              key={asset.id}
+                              onClick={() => selectMediaAsset(asset)}
+                              className={`overflow-hidden rounded-lg border text-left transition hover:border-[#c4a16a] ${
+                                form.image_media_asset_id === asset.id
+                                  ? "border-[#c4a16a] ring-2 ring-[#c4a16a]/20"
+                                  : "border-slate-200"
+                              }`}
+                            >
+                              <div className="h-24 bg-slate-100">
+                                {asset.preview_url ? (
+                                  <Image
+                                    src={asset.preview_url}
+                                    alt={
+                                      asset.alt_text || asset.original_filename
+                                    }
+                                    height={100}
+                                    width={100}
+                                    priority
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                                    No preview
+                                  </div>
+                                )}
+                              </div>
+                              {mediaPagination &&
+                                mediaPagination.totalPages > 1 && (
+                                  <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setImagePage((page) =>
+                                          Math.max(1, page - 1),
+                                        )
+                                      }
+                                      disabled={
+                                        imagePage <= 1 || mediaQuery.isFetching
+                                      }
+                                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                      Previous
+                                    </button>
+
+                                    <span className="text-xs text-slate-500">
+                                      Page {mediaPagination.page} of{" "}
+                                      {mediaPagination.totalPages}
+                                    </span>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setImagePage((page) =>
+                                          Math.min(
+                                            mediaPagination.totalPages,
+                                            page + 1,
+                                          ),
+                                        )
+                                      }
+                                      disabled={
+                                        imagePage >=
+                                          mediaPagination.totalPages ||
+                                        mediaQuery.isFetching
+                                      }
+                                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                      Next
+                                    </button>
+                                  </div>
+                                )}
+                              <p className="truncate p-2 text-xs font-medium text-slate-700">
+                                {asset.original_filename}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <Field label="External advertisement image URL (optional)">
+                  <input
+                    className={inputClass}
+                    type="url"
+                    name="image_url"
+                    value={form.image_url}
+                    onChange={changeField}
+                    maxLength={2048}
+                    placeholder="https://example.com/ad-image.jpg"
+                  />
+                </Field>
+
+                <Field label="Image alt text">
+                  <input
+                    className={inputClass}
+                    name="image_alt_text"
+                    value={form.image_alt_text}
+                    onChange={changeField}
+                    maxLength={300}
+                    placeholder="Describe the advertisement image"
+                  />
+                </Field>
+
+                <Field label="Call-to-action text">
+                  <input
+                    className={inputClass}
+                    name="call_to_action_text"
+                    value={form.call_to_action_text}
+                    onChange={changeField}
+                    maxLength={40}
+                    placeholder="e.g. Learn more, Shop now, Get started"
+                  />
+                </Field>
+
+                <Field label="Destination URL">
+                  <input
+                    className={inputClass}
+                    type="url"
+                    name="destination_url"
+                    value={form.destination_url}
+                    onChange={changeField}
+                    maxLength={2048}
+                    placeholder="https://example.com/landing-page"
+                  />
+                </Field>
               </div>
-
-              <Field label="Advertisement image URL">
-                <input
-                  className={inputClass}
-                  type="url"
-                  name="image_url"
-                  value={form.image_url}
-                  onChange={changeField}
-                  maxLength={2048}
-                  placeholder="https://example.com/ad-image.jpg"
-                />
-              </Field>
-
-              <Field label="Image alt text">
-                <input
-                  className={inputClass}
-                  name="image_alt_text"
-                  value={form.image_alt_text}
-                  onChange={changeField}
-                  maxLength={300}
-                  placeholder="Describe the advertisement image"
-                />
-              </Field>
-
-              <Field label="Call-to-action text">
-                <input
-                  className={inputClass}
-                  name="call_to_action_text"
-                  value={form.call_to_action_text}
-                  onChange={changeField}
-                  maxLength={40}
-                  placeholder="e.g. Learn more, Shop now, Get started"
-                />
-              </Field>
-
-              <Field label="Destination URL">
-                <input
-                  className={inputClass}
-                  type="url"
-                  name="destination_url"
-                  value={form.destination_url}
-                  onChange={changeField}
-                  maxLength={2048}
-                  placeholder="https://example.com/landing-page"
-                />
-              </Field>
             </div>
           </div>
 
@@ -601,135 +875,95 @@ export default function CampaignManagement({ isAdmin = false }) {
         </select>
       </div>
 
-      {campaignsQuery.isError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {errorMessage(campaignsQuery.error)}
-          <button
-            type="button"
-            onClick={() => campaignsQuery.refetch()}
-            className="ml-2 font-semibold underline"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
       {campaignsQuery.isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="h-20 animate-pulse rounded-xl bg-slate-100"
-            />
-          ))}
+        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+          Loading campaigns...
+        </div>
+      ) : campaignsQuery.isError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          {errorMessage(campaignsQuery.error)}
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
-          <Megaphone className="mx-auto text-slate-400" size={28} />
-          <h3 className="mt-3 font-semibold text-[#14243d]">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <Megaphone className="mx-auto text-slate-300" size={28} />
+          <h3 className="mt-3 text-sm font-semibold text-slate-700">
             No campaigns found
           </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Create your first campaign or adjust your search filters.
+          <p className="mt-1 text-xs text-slate-500">
+            Create a campaign to begin managing your advertising.
           </p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="hidden grid-cols-[minmax(0,1.6fr)_0.8fr_0.8fr_0.8fr_auto] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3 text-[11px] font-semibold tracking-wide text-slate-500 uppercase lg:grid">
-            <span>Campaign</span>
-            <span>Type</span>
-            <span>Channel</span>
-            <span>Status</span>
-            <span className="text-right">Actions</span>
-          </div>
-
           <div className="divide-y divide-slate-100">
             {campaigns.map((campaign) => (
-              <article
+              <div
                 key={campaign.id}
-                className="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.6fr)_0.8fr_0.8fr_0.8fr_auto] lg:items-center lg:gap-4"
+                className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center"
               >
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-semibold text-[#14243d]">
-                    {campaign.name}
-                  </h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-[#14243d]">
+                      {campaign.name}
+                    </h3>
+                    <StatusPill status={campaign.status} />
+                  </div>
                   <p className="mt-1 text-xs text-slate-500">
-                    Updated{" "}
-                    {campaign.updated_at
-                      ? new Date(campaign.updated_at).toLocaleDateString()
-                      : "—"}
+                    {campaign.campaign_type.replaceAll("_", " ")} ·{" "}
+                    {campaign.channel.replaceAll("_", " ")}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {campaign.placement_ids?.length ?? 0} placement(s) assigned
+                  <p className="mt-1 text-xs text-slate-400">
+                    {campaign.starts_at
+                      ? new Date(campaign.starts_at).toLocaleString()
+                      : "No start date"}
+                    {" — "}
+                    {campaign.ends_at
+                      ? new Date(campaign.ends_at).toLocaleString()
+                      : "No end date"}
                   </p>
-                  {campaign.starts_at && (
-                    <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
-                      <CalendarClock size={12} />
-                      Starts {new Date(campaign.starts_at).toLocaleString()}
-                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {isAdmin && campaign.status === "pending_review" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => changeStatus(campaign, "active")}
+                        disabled={updateMutation.isPending}
+                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => changeStatus(campaign, "rejected")}
+                        disabled={updateMutation.isPending}
+                        className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </>
                   )}
-                </div>
 
-                <div className="text-xs text-slate-600 capitalize">
-                  <span className="text-slate-400 lg:hidden">Type: </span>
-                  {campaign.campaign_type}
-                </div>
-
-                <div className="text-xs text-slate-600 capitalize">
-                  <span className="text-slate-400 lg:hidden">Channel: </span>
-                  {campaign.channel?.replaceAll("_", " ")}
-                </div>
-
-                <div>
-                  <StatusPill status={campaign.status} />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                   <button
                     type="button"
                     onClick={() => openEdit(campaign)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#c4a16a]"
                   >
-                    <Edit3 size={13} />
+                    <Edit3 size={14} />
                     Edit
                   </button>
-
-                  <select
-                    aria-label={`Change status for ${campaign.name}`}
-                    className="max-w-36 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-600"
-                    value={campaign.status}
-                    disabled={updateMutation.isPending}
-                    onChange={(event) =>
-                      changeStatus(campaign, event.target.value)
-                    }
-                  >
-                    {!isAdmin &&
-                      restrictedStatuses.includes(campaign.status) && (
-                        <option value={campaign.status} disabled>
-                          {campaign.status.replaceAll("_", " ")} (current)
-                        </option>
-                      )}
-                    {(isAdmin
-                      ? statuses
-                      : statuses.filter(
-                          (status) => !restrictedStatuses.includes(status),
-                        )
-                    ).map((status) => (
-                      <option key={status} value={status}>
-                        {status.replaceAll("_", " ")}
-                      </option>
-                    ))}
-                  </select>
                 </div>
-              </article>
+              </div>
             ))}
           </div>
-
-          <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
-            Showing {campaigns.length} of {campaignsQuery.data?.total ?? 0}{" "}
-            campaigns
-          </div>
         </div>
+      )}
+
+      {campaignsQuery.data?.total > campaigns.length && (
+        <p className="text-center text-xs text-slate-400">
+          Showing {campaigns.length} of {campaignsQuery.data.total} campaigns.
+        </p>
       )}
     </div>
   );

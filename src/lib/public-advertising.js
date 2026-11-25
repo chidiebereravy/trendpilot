@@ -10,12 +10,52 @@ const PUBLIC_CAMPAIGN_FIELDS = [
   "headline",
   "description",
   "image_url",
+  "image_media_asset_id",
   "image_alt_text",
   "call_to_action_text",
   "destination_url",
   "starts_at",
   "ends_at",
 ].join(",");
+
+async function getCampaignImage(campaign, supabase) {
+  if (campaign.image_media_asset_id) {
+    const { data: asset, error } = await supabase
+      .from("media_assets")
+      .select("id, bucket_id, object_path, alt_text, purpose, status")
+      .eq("id", campaign.image_media_asset_id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (
+      asset &&
+      asset.status === "published" &&
+      asset.purpose === "advertisement" &&
+      asset.bucket_id === "trendpilot-media"
+    ) {
+      const { data } = supabase.storage
+        .from(asset.bucket_id)
+        .getPublicUrl(asset.object_path);
+
+      return {
+        url: data?.publicUrl || null,
+        altText:
+          asset.alt_text || campaign.image_alt_text || "Advertisement image",
+      };
+    }
+
+    return {
+      url: null,
+      altText: campaign.image_alt_text || "Advertisement image",
+    };
+  }
+
+  return {
+    url: campaign.image_url || null,
+    altText: campaign.image_alt_text || "Advertisement image",
+  };
+}
 
 function isEligibleCampaign(campaign, now) {
   if (
@@ -116,6 +156,8 @@ export async function getPublicAdPlacement(placementKey) {
 
     if (!campaign) return null;
 
+    const campaignImage = await getCampaignImage(campaign, supabase);
+
     return {
       placement: {
         key: placement.placement_key,
@@ -129,8 +171,8 @@ export async function getPublicAdPlacement(placementKey) {
         channel: campaign.channel,
         headline: campaign.headline,
         description: campaign.description,
-        imageUrl: campaign.image_url,
-        imageAltText: campaign.image_alt_text,
+        imageUrl: campaignImage.url,
+        imageAltText: campaignImage.altText,
         callToActionText: campaign.call_to_action_text || "Learn more",
         href: `/go/ad/${campaign.id}?placement=${encodeURIComponent(placement.placement_key)}`,
         disclosureLabel: "Advertisement",

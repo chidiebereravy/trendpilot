@@ -198,6 +198,14 @@ export async function POST(request, { params }) {
           );
         }
 
+        if (archiveError.message?.includes("advertisement campaign")) {
+          return errorResponse(
+            "This image is currently used by an advertisement campaign. Select a replacement creative in the campaign settings before archiving it.",
+            409,
+            "ADVERTISING_MEDIA_IN_USE",
+          );
+        }
+
         return errorResponse(
           "This image is still being used by an article. Remove its article references before archiving it.",
           409,

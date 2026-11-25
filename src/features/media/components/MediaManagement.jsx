@@ -608,7 +608,7 @@ export default function MediaManagement({ role }) {
 
   function handlePublish(asset) {
     const confirmed = window.confirm(
-      `Approve "${asset.original_filename}" and move it to public storage?`,
+      `Archive "${asset.original_filename}"? This removes the image from public storage if it has been published. Images currently used by articles, affiliate campaigns, advertisement campaigns, or site branding cannot be archived until they are replaced or unlinked.`,
     );
 
     if (!confirmed) return;
@@ -731,15 +731,17 @@ export default function MediaManagement({ role }) {
                   <option value="">All purposes</option>
                   {mediaPurposeFilters.map((value) => (
                     <option key={value} value={value}>
-                      {{
-                        article: "Article",
-                        affiliate: "Affiliate campaign",
-                        advertisement: "Advertisement",
-                        avatar: "Profile picture",
-                        favicon: "Favicon",
-                        logo: "Website logo",
-                        unclassified: "Unclassified",
-                      }[value]}
+                      {
+                        {
+                          article: "Article",
+                          affiliate: "Affiliate campaign",
+                          advertisement: "Advertisement",
+                          avatar: "Profile picture",
+                          favicon: "Favicon",
+                          logo: "Website logo",
+                          unclassified: "Unclassified",
+                        }[value]
+                      }
                     </option>
                   ))}
                 </select>
@@ -882,10 +884,3 @@ export default function MediaManagement({ role }) {
     </div>
   );
 }
-
-
-
-
-
-
-

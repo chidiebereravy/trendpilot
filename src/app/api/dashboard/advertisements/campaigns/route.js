@@ -39,9 +39,16 @@ async function attachCampaignMediaPreviews(campaigns, adminClient) {
 
   const assetsById = new Map(
     (assets ?? []).map((asset) => {
-      const { data } = adminClient.storage
-        .from(asset.bucket_id)
-        .getPublicUrl(asset.object_path);
+      const isValidAsset =
+        asset.status === "published" &&
+        asset.purpose === "advertisement" &&
+        asset.bucket_id === "trendpilot-media";
+
+      const { data } = isValidAsset
+        ? adminClient.storage
+            .from(asset.bucket_id)
+            .getPublicUrl(asset.object_path)
+        : { data: null };
 
       return [
         asset.id,
