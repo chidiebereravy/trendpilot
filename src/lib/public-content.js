@@ -344,3 +344,90 @@ export async function getPublishedArticlesPage({
     totalPages: Math.max(1, Math.ceil(total / safePageSize)),
   };
 }
+
+export async function searchPublishedArticles({ query, limit = 24 } = {}) {
+  await connection();
+
+  const searchTerm = typeof query === "string" ? query.trim() : "";
+
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const safeLimit = Math.min(48, Math.max(1, Math.floor(Number(limit) || 24)));
+
+  // Escape SQL LIKE wildcard characters so they are treated literally.
+  const pattern = `%${searchTerm.replace(/[\\%_]/g, "\\$&")}%`;
+
+  const searchableFields = [
+    "title",
+    "excerpt",
+    "seo_title",
+    "seo_description",
+    "focus_keyword",
+  ];
+
+  const results = await Promise.all(
+    searchableFields.map((field) =>
+      supabase
+        .from("articles")
+        .select(ARTICLE_FIELDS)
+        .eq("status", "published")
+        .not("published_at", "is", null)
+        .lte("published_at", new Date().toISOString())
+        .ilike(field, pattern)
+        .order("published_at", { ascending: false })
+        .limit(safeLimit),
+    ),
+  );
+
+  const articlesById = new Map();
+
+  for (const result of results) {
+    if (result.error) {
+      console.error("Public article search failed:", result.error);
+      continue;
+    }
+
+    for (const article of result.data || []) {
+      articlesById.set(article.id, article);
+    }
+  }
+
+  const articles = [...articlesById.values()]
+    .sort(
+      (a, b) =>
+        new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
+    )
+    .slice(0, safeLimit);
+
+  if (!articles.length) {
+    return [];
+  }
+
+  const categories = await getPublishedCategories();
+
+  const categoryMap = new Map(
+    categories.map((category) => [category.id, category]),
+  );
+
+  return articles
+    .map((article) => {
+      const category = categoryMap.get(article.category_id) || null;
+
+      // Do not expose articles whose category is not publicly available.
+      if (!category) return null;
+
+      return {
+        ...article,
+        category,
+        categoryUrl: getCategoryUrl(category, categories),
+        imageUrl: getPublicImageUrl(supabase, article.featured_image_path),
+        excerptText: getArticleExcerpt(article),
+        readingTime: getArticleReadingTime(article.content),
+      };
+    })
+    .filter(Boolean);
+}
