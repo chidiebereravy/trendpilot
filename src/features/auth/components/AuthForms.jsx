@@ -15,6 +15,7 @@ import {
   useRegister,
   useResetPassword,
 } from "@/features/auth/hooks/useAuth";
+import { getSafeAuthNextPath } from "@/lib/auth/safe-next-path";
 
 function AuthLayout({ eyebrow, title, description, children, footer }) {
   return (
@@ -131,7 +132,12 @@ function getApiError(error) {
   );
 }
 
-export function LoginForm({ verified, passwordUpdated, confirmationError }) {
+export function LoginForm({
+  verified,
+  passwordUpdated,
+  confirmationError,
+  next,
+}) {
   const router = useRouter();
   const login = useLogin();
   const [formError, setFormError] = useState("");
@@ -151,7 +157,7 @@ export function LoginForm({ verified, passwordUpdated, confirmationError }) {
 
     try {
       await login.mutateAsync(result.data);
-      router.replace("/");
+      router.replace(getSafeAuthNextPath(next) || "/dashboard");
       router.refresh();
     } catch (error) {
       setFormError(getApiError(error));
@@ -248,7 +254,7 @@ export function LoginForm({ verified, passwordUpdated, confirmationError }) {
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({ next }) {
   const register = useRegister();
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -279,7 +285,10 @@ export function RegisterForm() {
     }
 
     try {
-      const response = await register.mutateAsync(result.data);
+      const response = await register.mutateAsync({
+        payload: result.data,
+        next,
+      });
       setSuccessMessage(
         response.message ||
           "If your account can be registered, a verification email will be sent.",

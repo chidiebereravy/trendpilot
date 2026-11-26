@@ -12,7 +12,7 @@ import { authQueryKeys } from "@/features/auth/queries/auth.keys";
 
 export function useRegister() {
   return useMutation({
-    mutationFn: registerAccount,
+    mutationFn: ({ payload, next }) => registerAccount(payload, next),
   });
 }
 

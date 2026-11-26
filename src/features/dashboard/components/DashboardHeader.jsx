@@ -1,28 +1,28 @@
 "use client";
 
+import {
+  Bell,
+  ChevronDown,
+  FileText,
+  FolderTree,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  UserRound,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  Menu,
-  Search,
-  ChevronDown,
-  LogOut,
-  UserRound,
-  LayoutDashboard,
-  FileText,
-  Images,
-  FolderTree,
-  X,
-  Home,
-  PanelLeftClose,
-  PanelLeftOpen,
-  MessageSquare,
-  Bell,
-} from "lucide-react";
 
 import { useAuthSession, useLogout } from "@/features/auth/hooks/useAuth";
 import { useUnreadNotificationCount } from "@/features/notifications/queries/notification.queries";
+import { Users } from "lucide-react";
 
 const searchItems = [
   {
@@ -61,6 +61,20 @@ const searchItems = [
     description: "View workspace updates and alerts",
     href: "/dashboard/notifications",
     icon: Bell,
+  },
+  {
+    label: "User Management",
+    description: "Manage workspace users",
+    href: "/dashboard/users",
+    icon: Users,
+    roles: ["admin"],
+  },
+  {
+    label: "Authors",
+    href: "/dashboard/authors",
+    description: "Manage article authors",
+    icon: UserRound,
+    roles: ["admin", "editor"],
   },
 ];
 

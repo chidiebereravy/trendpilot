@@ -82,7 +82,7 @@ const navigation = [
     label: "People",
     items: [
       {
-        label: "Users",
+        label: "User Management",
         href: "/dashboard/users",
         icon: Users,
         roles: ["admin"],
@@ -92,6 +92,12 @@ const navigation = [
         href: "/dashboard/authors",
         icon: UserRound,
         roles: ["admin", "editor"],
+      },
+      {
+        label: "Apply to become an author",
+        href: "/dashboard/author-application",
+        icon: FileText,
+        roles: ["user"],
       },
     ],
   },

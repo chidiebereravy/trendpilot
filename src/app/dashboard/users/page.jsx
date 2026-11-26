@@ -2,7 +2,7 @@
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
-import UserManagement from "@/features/users/components/UserManagement";
+import UserManagementWorkspace from "@/features/users/components/UserManagementWorkspace";
 import { requireRole } from "@/lib/auth/session";
 
 export const metadata = {
@@ -33,7 +33,7 @@ async function UserManagementContent() {
     throw error;
   }
 
-  return <UserManagement currentUserId={user.id} />;
+  return <UserManagementWorkspace currentUserId={user.id} />;
 }
 
 function UserManagementFallback() {

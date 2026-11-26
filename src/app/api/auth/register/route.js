@@ -2,6 +2,7 @@
 import { handleApiError, successResponse } from "@/lib/api/response";
 import { assertSameOrigin, readValidatedBody } from "@/lib/api/request";
 import { registerSchema } from "@/features/auth/schemas/auth.schema";
+import { getSafeAuthNextPath } from "@/lib/auth/safe-next-path";
 import { AuthError } from "@/lib/auth/session";
 
 export async function POST(request) {
@@ -9,10 +10,18 @@ export async function POST(request) {
     assertSameOrigin(request);
 
     const body = await readValidatedBody(request, registerSchema);
+    const requestUrl = new URL(request.url);
+    const next = getSafeAuthNextPath(requestUrl.searchParams.get("next"));
+
     const supabase = await createSupabaseServerClient();
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
+
+    const confirmationUrl = new URL("/auth/confirm", appUrl);
+
+    if (next) {
+      confirmationUrl.searchParams.set("next", next);
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email: body.email,
@@ -21,7 +30,7 @@ export async function POST(request) {
         data: {
           display_name: body.displayName,
         },
-        emailRedirectTo: `${appUrl}/auth/confirm`,
+        emailRedirectTo: confirmationUrl.toString(),
       },
     });
 

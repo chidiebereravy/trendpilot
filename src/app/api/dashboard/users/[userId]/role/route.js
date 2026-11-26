@@ -17,7 +17,7 @@ function handleRoleUpdateError(error) {
 
   if (error.code === "22023") {
     throw new AuthError(
-      error.message || "The selected role is invalid.",
+      "The selected role is invalid.",
       400,
       "INVALID_USER_ROLE",
     );
@@ -25,7 +25,7 @@ function handleRoleUpdateError(error) {
 
   if (error.code === "P0001") {
     throw new AuthError(
-      error.message || "This role change is not permitted.",
+      "This role change is not permitted.",
       409,
       "ROLE_UPDATE_CONFLICT",
     );
@@ -62,7 +62,7 @@ export async function PATCH(request, { params }) {
     const body = await readValidatedBody(request, updateUserRoleSchema);
 
     const { data, error } = await supabase.rpc("admin_update_user_role", {
-      p_user_id: userId,
+      p_user_id: idResult.data,
       p_new_role: body.role,
     });
 
@@ -72,7 +72,7 @@ export async function PATCH(request, { params }) {
 
     return successResponse(
       {
-        userId,
+        userId: idResult.data,
         role: data,
       },
       200,

@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+
 import { LoginForm } from "@/features/auth/components/AuthForms";
 
 function LoginPageContent() {
@@ -12,6 +13,7 @@ function LoginPageContent() {
       verified={searchParams.get("verified") === "1"}
       passwordUpdated={searchParams.get("password") === "updated"}
       confirmationError={searchParams.get("error")}
+      next={searchParams.get("next")}
     />
   );
 }

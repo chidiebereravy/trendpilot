@@ -1,7 +1,18 @@
 ﻿import api from "@/lib/api/axios";
 
-export async function registerAccount(payload) {
-  const response = await api.post("/auth/register", payload);
+export async function registerAccount(payload, next = null) {
+  const params = new URLSearchParams();
+
+  if (next) {
+    params.set("next", next);
+  }
+
+  const query = params.toString();
+  const response = await api.post(
+    `/auth/register${query ? `?${query}` : ""}`,
+    payload,
+  );
+
   return response.data;
 }
 
