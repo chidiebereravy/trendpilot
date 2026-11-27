@@ -25,6 +25,7 @@ import {
   Compass,
   Clock3,
 } from "lucide-react";
+import { Mail } from "lucide-react";
 
 const navigation = [
   {
@@ -131,6 +132,12 @@ const navigation = [
         label: "Affiliate links",
         href: "/dashboard/affiliate-links",
         icon: Link2,
+        roles: ["admin", "editor"],
+      },
+      {
+        label: "Email marketing",
+        href: "/dashboard/email-marketing",
+        icon: Mail,
         roles: ["admin", "editor"],
       },
     ],

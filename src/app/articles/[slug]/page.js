@@ -1,10 +1,11 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowLeft, ArrowRight, Clock3, CalendarDays } from "lucide-react";
 import { getPublicSeoSettings, getSiteUrl } from "@/lib/seo-settings";
+import ArticleShareButton from "@/features/articles/components/ArticleShareButton";
 
 import ArticleCard from "@/components/articles/ArticleCard";
 import AdPlacement from "@/components/advertising/AdPlacement";
@@ -107,7 +108,16 @@ export async function generateMetadata({ params }) {
       url: canonical,
       siteName: settings.site_name,
       publishedTime: article.published_at,
-      images: article.imageUrl ? [{ url: article.imageUrl }] : undefined,
+      images: article.imageUrl
+        ? [
+            {
+              url: article.imageUrl,
+              alt: article.title,
+              width: 1200,
+              height: 630,
+            },
+          ]
+        : undefined,
     },
 
     twitter: {
@@ -250,6 +260,7 @@ async function ArticleContent({ params }) {
                   {formatReadingTime(article.readingTime)}
                 </span>
               </div>
+              <ArticleShareButton title={article.title} url={canonicalUrl} />
             </div>
           </div>
         </header>
