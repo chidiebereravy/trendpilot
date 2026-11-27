@@ -19,6 +19,20 @@ export async function POST(request) {
     });
 
     if (error) {
+      console.error("[auth:forgot-password] Supabase error:", {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+      });
+
+      if (error.code === "over_email_send_rate_limit") {
+        throw new AuthError(
+          "Too many password reset requests have been sent. Password reset emails are temporarily limited. Please wait before trying again.",
+          429,
+          "PASSWORD_RESET_RATE_LIMITED",
+        );
+      }
+
       throw new AuthError(
         "We cannot process your password reset request right now. Please try again later.",
         503,
