@@ -137,7 +137,7 @@ export default function AdvertisementsDashboard() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#14243d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#203858]"
+            className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#14243d] px-4 py-2.5 text-sm font-semibold !text-white transition hover:bg-[#203858]"
           >
             <RefreshCw size={15} />
             Try again
@@ -178,7 +178,7 @@ export default function AdvertisementsDashboard() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[#14243d] transition hover:bg-slate-50 disabled:opacity-60 lg:self-auto"
+            className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[#14243d] transition hover:bg-slate-50 disabled:opacity-60 lg:self-auto"
           >
             <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
             Refresh overview
@@ -207,7 +207,7 @@ export default function AdvertisementsDashboard() {
             type="button"
             onClick={() => setActiveTab(tab.id)}
             aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
               activeTab === tab.id
                 ? "bg-[#14243d] text-white shadow-sm"
                 : "bg-white text-slate-600 hover:bg-slate-100"

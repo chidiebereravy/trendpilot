@@ -141,7 +141,7 @@ export default function ArticleShareButton({ title, url }) {
             onClick={handleNativeShare}
             aria-label="Share article using your device"
             title="Share article"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#14243d] text-white transition-colors hover:bg-[#263c5d]"
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-[#14243d] text-white transition-colors hover:bg-[#263c5d]"
           >
             <Share2 size={17} />
           </button>
@@ -152,7 +152,7 @@ export default function ArticleShareButton({ title, url }) {
           onClick={handleCopy}
           aria-label={copied ? "Link copied" : "Copy article link"}
           title={copied ? "Copied" : "Copy link"}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e6dfd1] bg-white text-[#14243d] transition-colors hover:border-[#b99658] hover:text-[#9b7842]"
+          className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e6dfd1] bg-white text-[#14243d] transition-colors hover:border-[#b99658] hover:text-[#9b7842]"
         >
           {copied ? <Check size={17} /> : <Copy size={17} />}
         </button>

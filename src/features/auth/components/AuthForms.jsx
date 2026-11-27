@@ -444,7 +444,7 @@ export function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={forgotPassword.isPending}
-          className="w-full rounded-lg bg-[#14243d] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full cursor-pointer rounded-lg bg-[#14243d] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {forgotPassword.isPending
             ? "Sending instructions..."
@@ -526,7 +526,7 @@ export function ResetPasswordForm({ linkError }) {
         <button
           type="submit"
           disabled={resetPassword.isPending}
-          className="w-full rounded-lg bg-[#14243d] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full cursor-pointer rounded-lg bg-[#14243d] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {resetPassword.isPending ? "Updating password..." : "Update password"}
         </button>

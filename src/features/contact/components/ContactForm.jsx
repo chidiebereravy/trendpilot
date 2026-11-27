@@ -195,7 +195,7 @@ export default function ContactForm() {
             maxLength={5000}
             value={form.message}
             onChange={handleChange}
-            className={`${fieldClass} resize-y`}
+            className={`${fieldClass} max-h-36 min-h-36 resize-y`}
           />
           <p className="mt-2 text-right text-xs text-gray-400">
             {form.message.length}/5000 characters
@@ -205,7 +205,7 @@ export default function ContactForm() {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="inline-flex w-full items-center justify-center gap-3 bg-[#14243d] px-7 py-4 text-xs font-bold text-white transition hover:bg-[#243b5d] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-[#14243d] px-7 py-4 text-xs font-bold text-white transition hover:bg-[#243b5d] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {status === "loading" ? (
             "Sending message..."

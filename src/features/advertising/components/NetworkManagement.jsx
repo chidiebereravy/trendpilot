@@ -156,7 +156,7 @@ export default function NetworkManagement() {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#203858]"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-2.5 text-sm font-semibold !text-white transition hover:bg-[#203858]"
         >
           <Plus size={16} />
           Add network account
@@ -196,7 +196,7 @@ export default function NetworkManagement() {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+              className="cursor-pointer rounded-lg p-2 text-slate-500 hover:bg-slate-100"
               aria-label="Close network form"
             >
               <X size={18} />
@@ -311,14 +311,14 @@ export default function NetworkManagement() {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="rounded-xl bg-[#14243d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#203858] disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-xl bg-[#14243d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#203858] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {mutation.isPending
                 ? "Saving..."
@@ -355,7 +355,7 @@ export default function NetworkManagement() {
           type="button"
           onClick={() => networksQuery.refetch()}
           disabled={networksQuery.isFetching}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
         >
           <RefreshCw
             size={15}
@@ -371,7 +371,7 @@ export default function NetworkManagement() {
           <button
             type="button"
             onClick={() => networksQuery.refetch()}
-            className="ml-2 font-semibold underline"
+            className="ml-2 cursor-pointer font-semibold underline"
           >
             Retry
           </button>
@@ -453,7 +453,7 @@ export default function NetworkManagement() {
                   <button
                     type="button"
                     onClick={() => openEdit(network)}
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Edit account
                   </button>

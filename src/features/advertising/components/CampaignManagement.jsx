@@ -324,7 +324,7 @@ export default function CampaignManagement({ isAdmin = false }) {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#203858]"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-2.5 text-sm font-semibold !text-white transition hover:bg-[#203858]"
         >
           <Plus size={16} />
           New campaign
@@ -348,7 +348,7 @@ export default function CampaignManagement({ isAdmin = false }) {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+              className="cursor-pointer rounded-lg p-2 text-slate-500 hover:bg-slate-100"
               aria-label="Close campaign form"
             >
               <X size={18} />
@@ -578,7 +578,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                     <button
                       type="button"
                       onClick={() => setImagePickerOpen((open) => !open)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a]"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a]"
                     >
                       <ImagePlus size={14} />
                       Browse media library
@@ -626,7 +626,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                         <button
                           type="button"
                           onClick={removeMediaAsset}
-                          className="mt-3 text-xs font-semibold text-red-600 hover:text-red-700"
+                          className="mt-3 cursor-pointer text-xs font-semibold text-red-600 hover:text-red-700"
                         >
                           Remove selected image
                         </button>
@@ -680,7 +680,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                               type="button"
                               key={asset.id}
                               onClick={() => selectMediaAsset(asset)}
-                              className={`overflow-hidden rounded-lg border text-left transition hover:border-[#c4a16a] ${
+                              className={`cursor-pointer overflow-hidden rounded-lg border text-left transition hover:border-[#c4a16a] ${
                                 form.image_media_asset_id === asset.id
                                   ? "border-[#c4a16a] ring-2 ring-[#c4a16a]/20"
                                   : "border-slate-200"
@@ -717,7 +717,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                                       disabled={
                                         imagePage <= 1 || mediaQuery.isFetching
                                       }
-                                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                       Previous
                                     </button>
@@ -742,7 +742,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                                           mediaPagination.totalPages ||
                                         mediaQuery.isFetching
                                       }
-                                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c4a16a] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                       Next
                                     </button>
@@ -818,14 +818,14 @@ export default function CampaignManagement({ isAdmin = false }) {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="rounded-xl bg-[#14243d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#203858] disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-xl bg-[#14243d] px-5 py-2.5 text-sm font-semibold !text-white hover:bg-[#203858] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {busy
                 ? "Saving..."
@@ -930,7 +930,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                         type="button"
                         onClick={() => changeStatus(campaign, "active")}
                         disabled={updateMutation.isPending}
-                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        className="cursor-pointer rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold !text-white hover:bg-emerald-700 disabled:opacity-50"
                       >
                         Approve
                       </button>
@@ -938,7 +938,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                         type="button"
                         onClick={() => changeStatus(campaign, "rejected")}
                         disabled={updateMutation.isPending}
-                        className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        className="cursor-pointer rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                       >
                         Reject
                       </button>
@@ -948,7 +948,7 @@ export default function CampaignManagement({ isAdmin = false }) {
                   <button
                     type="button"
                     onClick={() => openEdit(campaign)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#c4a16a]"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#c4a16a]"
                   >
                     <Edit3 size={14} />
                     Edit

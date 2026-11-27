@@ -242,7 +242,7 @@ export default function PlacementManagement() {
         <button
           type="button"
           onClick={openCreateForm}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#203858]"
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#14243d] px-4 py-3 text-sm font-semibold !text-white transition hover:bg-[#203858]"
         >
           <Plus size={16} />
           Create placement
@@ -270,7 +270,7 @@ export default function PlacementManagement() {
               onClick={closeForm}
               disabled={isSaving}
               aria-label="Close placement form"
-              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              className="cursor-pointer rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
             >
               <X size={19} />
             </button>

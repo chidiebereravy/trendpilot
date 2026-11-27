@@ -23,6 +23,11 @@ import { useState } from "react";
 import { useAuthSession, useLogout } from "@/features/auth/hooks/useAuth";
 import { useUnreadNotificationCount } from "@/features/notifications/queries/notification.queries";
 import { Users } from "lucide-react";
+import { Link2 } from "lucide-react";
+import { Mail } from "lucide-react";
+import { Megaphone } from "lucide-react";
+import { ChartNoAxesCombined } from "lucide-react";
+import { FileBarChart } from "lucide-react";
 
 const searchItems = [
   {
@@ -75,6 +80,62 @@ const searchItems = [
     description: "Manage article authors",
     icon: UserRound,
     roles: ["admin", "editor"],
+  },
+  {
+    label: "Affiliate links",
+    description: "Manage affiliate links",
+    href: "/dashboard/affiliate-links",
+    icon: Link2,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "Email marketing",
+    description: "Manage email marketing",
+    href: "/dashboard/email-marketing",
+    icon: Mail,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "Advertisements",
+    description: "Advertise your product",
+    href: "/dashboard/advertisements",
+    icon: Megaphone,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "Analytics",
+    description: "View your analytics",
+    href: "/dashboard/analytics",
+    icon: ChartNoAxesCombined,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "Reports",
+    description: "Manage your report",
+    href: "/dashboard/reports",
+    icon: FileBarChart,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "Apply to become an author",
+    description: "Send invitation and manage your authors and editors",
+    href: "/dashboard/author-application",
+    icon: FileText,
+    roles: ["user"],
+  },
+  {
+    label: "SEO settings",
+    description: "Send invitation and manage your authors and editors",
+    href: "/dashboard/seo",
+    icon: Search,
+    roles: ["admin", "editor"],
+  },
+  {
+    label: "General settings",
+    description: "Send invitation and manage your authors and editors",
+    href: "/dashboard/settings",
+    icon: Settings,
+    roles: ["admin"],
   },
 ];
 
