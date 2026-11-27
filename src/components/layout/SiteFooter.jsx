@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import TrendPilotLogo from "./TrendPilotLogo";
 
 const footerLinks = [
   { label: "About Us", href: "/about" },
@@ -23,9 +24,11 @@ export default function SiteFooter() {
       <div className="container-main py-14">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
-            <Link href="/" className="brand !text-white">
-              TrendPilot<span className="brand-dot">.</span>
-            </Link>
+            <div className="flex h-10 w-20 items-center justify-center rounded-xl bg-white">
+              <Link href="/" className="brand">
+                <TrendPilotLogo className="h-fit w-fit" />
+              </Link>
+            </div>
 
             <p className="mt-4 max-w-sm text-sm leading-7 text-gray-400">
               Navigate ideas. Discover opportunities. Explore thoughtful

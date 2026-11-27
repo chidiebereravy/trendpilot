@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Search } from "lucide-react";
 
 import { useAuthSession, useLogout } from "@/features/auth/hooks/useAuth";
+import TrendPilotLogo from "./TrendPilotLogo";
 
 const navigation = [
   { label: "Home", href: "/" },
@@ -162,7 +163,7 @@ export default function SiteHeader() {
             aria-label="TrendPilot homepage"
             onClick={closeMenu}
           >
-            TrendPilot<span className="brand-dot">.</span>
+            <TrendPilotLogo />
           </Link>
 
           {/* Desktop navigation */}

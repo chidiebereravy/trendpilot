@@ -28,6 +28,7 @@ import { Mail } from "lucide-react";
 import { Megaphone } from "lucide-react";
 import { ChartNoAxesCombined } from "lucide-react";
 import { FileBarChart } from "lucide-react";
+import { Settings } from "lucide-react";
 
 const searchItems = [
   {

@@ -26,6 +26,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { Mail } from "lucide-react";
+import TrendPilotLogo from "@/components/layout/TrendPilotLogo";
 
 const navigation = [
   {
@@ -232,18 +233,8 @@ export default function DashboardSidebar({
             aria-label="TrendPilot dashboard home"
             className="flex min-w-0 items-center gap-3"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#c4a16a] text-lg font-bold text-[#14243d]">
-              T
-            </span>
-
-            <span
-              className={[
-                "text-lg font-bold tracking-tight whitespace-nowrap",
-                collapsed ? "lg:hidden" : "",
-              ].join(" ")}
-            >
-              TrendPilot<span className="text-[#c4a16a]">.</span>
-            </span>
+            
+            <TrendPilotLogo isText={false} />
           </Link>
 
           {/* Mobile close */}

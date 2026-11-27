@@ -25,6 +25,21 @@ export async function generateMetadata() {
 
     description: settings.default_description,
     applicationName: settings.site_name,
+    icons: {
+      icon: [
+        {
+          url: "/favicon.ico",
+          type: "image/x-icon",
+        },
+      ],
+      shortcut: "/favicon.ico",
+      apple: [
+        {
+          url: "/favicon.png",
+          type: "image/png",
+        },
+      ],
+    },
 
     keywords: [
       settings.site_name,
