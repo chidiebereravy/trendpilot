@@ -184,7 +184,7 @@ function CategoryForm({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-[#14243d]"
+            className="cursor-pointer rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-[#14243d]"
           >
             <X size={19} />
           </button>
@@ -265,7 +265,7 @@ function CategoryForm({
               onChange={(event) =>
                 updateField("description", event.target.value)
               }
-              className={inputClass}
+              className={`${inputClass} max-h-24 min-h-24`}
               placeholder="Describe what readers will discover in this category."
             />
           </div>
@@ -345,7 +345,7 @@ function CategoryForm({
                   onChange={(event) =>
                     updateField("seoDescription", event.target.value)
                   }
-                  className={inputClass}
+                  className={`${inputClass} max-h-24 min-h-24`}
                   placeholder="Summarise this category for search results."
                 />
                 <p className="mt-1 text-right text-[10px] text-gray-400">
@@ -368,7 +368,7 @@ function CategoryForm({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-sm border border-[#dfe2e8] px-5 py-3 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
+              className="cursor-pointer rounded-sm border border-[#dfe2e8] px-5 py-3 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
             >
               Cancel
             </button>
@@ -376,7 +376,7 @@ function CategoryForm({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-sm bg-[#14243d] px-6 py-3 text-xs font-bold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-sm bg-[#14243d] px-6 py-3 text-xs font-bold text-white transition hover:bg-[#203653] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending
                 ? "Saving..."
@@ -453,7 +453,7 @@ function BroadNicheCard({
             type="button"
             onClick={() => setExpanded((value) => !value)}
             aria-label={`${expanded ? "Collapse" : "Expand"} ${category.name}`}
-            className="mt-1 rounded-sm p-1 text-gray-400 transition hover:bg-gray-100 hover:text-[#14243d]"
+            className="mt-1 cursor-pointer rounded-sm p-1 text-gray-400 transition hover:bg-gray-100 hover:text-[#14243d]"
           >
             {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           </button>
@@ -489,7 +489,7 @@ function BroadNicheCard({
           <button
             type="button"
             onClick={() => onEdit(category)}
-            className="rounded-sm border border-[#e8e9ed] px-3 py-2 text-[11px] font-semibold text-[#344054] transition hover:border-[#b99658]"
+            className="cursor-pointer rounded-sm border border-[#e8e9ed] px-3 py-2 text-[11px] font-semibold text-[#344054] transition hover:border-[#b99658]"
           >
             Edit details
           </button>
@@ -497,7 +497,7 @@ function BroadNicheCard({
           <button
             type="button"
             onClick={() => onCreate(category)}
-            className="inline-flex items-center gap-1.5 rounded-sm bg-[#14243d] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#203653]"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm bg-[#14243d] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#203653]"
           >
             <Plus size={14} />
             Add Subcategory
@@ -541,7 +541,7 @@ function BroadNicheCard({
                     <button
                       type="button"
                       onClick={() => onEdit(subcategory)}
-                      className="rounded-sm border border-[#e8e9ed] px-3 py-2 text-[11px] font-semibold text-[#344054] transition hover:border-[#b99658]"
+                      className="cursor-pointer rounded-sm border border-[#e8e9ed] px-3 py-2 text-[11px] font-semibold text-[#344054] transition hover:border-[#b99658]"
                     >
                       Edit
                     </button>
@@ -549,7 +549,7 @@ function BroadNicheCard({
                     <button
                       type="button"
                       onClick={() => onCreate(subcategory)}
-                      className="inline-flex items-center gap-1 rounded-sm border border-[#d9d2c4] px-3 py-2 text-[11px] font-semibold text-[#8a6b3e] transition hover:bg-[#f6f1e7]"
+                      className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-[#d9d2c4] px-3 py-2 text-[11px] font-semibold text-[#8a6b3e] transition hover:bg-[#f6f1e7]"
                     >
                       <Plus size={13} />
                       Add Micro Niche
@@ -784,7 +784,7 @@ export default function CategoryManagement() {
             <button
               type="button"
               onClick={() => openCreate(null)}
-              className="inline-flex items-center justify-center gap-2 self-start rounded-sm bg-[#14243d] px-5 py-3.5 text-xs font-bold text-white transition hover:bg-[#203653]"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-sm bg-[#14243d] px-5 py-3.5 text-xs font-bold text-white transition hover:bg-[#203653]"
             >
               <Plus size={16} />
               Add category
@@ -875,7 +875,7 @@ export default function CategoryManagement() {
             <button
               type="button"
               onClick={() => refetch()}
-              className="mt-4 rounded-sm bg-[#14243d] px-4 py-2.5 text-xs font-semibold text-white"
+              className="mt-4 cursor-pointer rounded-sm bg-[#14243d] px-4 py-2.5 text-xs font-semibold text-white"
             >
               Try again
             </button>

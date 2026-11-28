@@ -231,7 +231,7 @@ export default function ArticleManagement() {
 
         <Link
           href="/dashboard/articles/new"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-[#14243d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#203653]"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-[#14243d] px-5 py-3 text-sm font-semibold !text-white shadow-sm transition hover:bg-[#203653]"
         >
           <FilePlus2 size={17} />
           New article
@@ -374,9 +374,7 @@ export default function ArticleManagement() {
                     <th className="px-5 py-4 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
                       Article
                     </th>
-                    <th className="px-4 py-4 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-                      Micro Niche
-                    </th>
+
                     <th className="px-4 py-4 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
                       Author
                     </th>
@@ -411,11 +409,6 @@ export default function ArticleManagement() {
                       </td>
 
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {categoryNames.get(article.category_id) ||
-                          "Unavailable"}
-                      </td>
-
-                      <td className="px-4 py-4 text-sm text-gray-600">
                         {authorNames.get(article.author_id) || "Unknown author"}
                       </td>
 
@@ -443,7 +436,7 @@ export default function ArticleManagement() {
                               disabled={deleteArticle.isPending}
                               aria-label={`Delete ${article.title}`}
                               title="Delete article"
-                              className="flex h-9 w-9 items-center justify-center rounded-md border border-[#e3e5e9] text-gray-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-[#e3e5e9] text-gray-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                             >
                               <Trash2 size={15} />
                             </button>

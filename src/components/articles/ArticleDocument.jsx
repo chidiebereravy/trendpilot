@@ -383,7 +383,7 @@ export default function ArticleDocument({
                 .toLowerCase()
             : "";
 
-        if (normalizedTitle && headingText === normalizedTitle) {
+        if (normalizedTitle && headingText === normalizedTitle && index > 0) {
           return null;
         }
 
