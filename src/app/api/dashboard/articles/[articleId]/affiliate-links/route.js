@@ -37,6 +37,113 @@ function validateArticleAccess(article, user, role) {
   }
 }
 
+/**
+ * Supports both the legacy article block format and TipTap JSON.
+ *
+ * Legacy:
+ * { id: "uuid", type: "paragraph", text: "..." }
+ *
+ * TipTap:
+ * { type: "paragraph", attrs: { id: "uuid" }, content: [...] }
+ */
+function getBlockId(block) {
+  if (typeof block?.attrs?.id === "string") {
+    return block.attrs.id;
+  }
+
+  if (typeof block?.id === "string") {
+    return block.id;
+  }
+
+  return null;
+}
+
+function getArticleBlocks(article) {
+  return Array.isArray(article.content?.content) ? article.content.content : [];
+}
+
+function getNodeText(node) {
+  if (!node || typeof node !== "object") {
+    return "";
+  }
+
+  if (typeof node.text === "string") {
+    return node.text;
+  }
+
+  if (node.type === "faqSection" && Array.isArray(node.attrs?.items)) {
+    return node.attrs.items
+      .map((item) => {
+        const question = typeof item.question === "string" ? item.question : "";
+
+        const answer = typeof item.answer === "string" ? item.answer : "";
+
+        return `${question} ${answer}`.trim();
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (typeof node.text === "string") {
+    return node.text;
+  }
+
+  if (!Array.isArray(node.content)) {
+    return "";
+  }
+
+  return node.content.map(getNodeText).filter(Boolean).join(" ");
+}
+
+function getBlockPreview(block) {
+  const text =
+    typeof block?.text === "string" ? block.text : getNodeText(block);
+
+  return text.replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+function getBlockType(block) {
+  const type = block?.type;
+
+  if (typeof type !== "string") {
+    return "unknown";
+  }
+
+  const labels = {
+    paragraph: "Paragraph",
+    heading: "Heading",
+    quote: "Quote",
+    blockquote: "Quote",
+    list: "List",
+    bulletList: "Bullet list",
+    orderedList: "Numbered list",
+    image: "Image",
+    table: "Table",
+    horizontalRule: "Divider",
+    faqSection: "FAQs",
+  };
+
+  return labels[type] ?? type;
+}
+
+function validateArticleBlocks(article, placements) {
+  const blocks = getArticleBlocks(article);
+
+  const blockIds = new Set(
+    blocks.map(getBlockId).filter((id) => typeof id === "string"),
+  );
+
+  for (const placement of placements) {
+    if (!blockIds.has(placement.blockId)) {
+      throw new AuthError(
+        "One or more selected article blocks no longer exist. Save the article and try again.",
+        409,
+        "ARTICLE_BLOCK_NOT_FOUND",
+      );
+    }
+  }
+}
+
 async function getArticle(supabase, articleId) {
   const { data, error } = await supabase
     .from("articles")
@@ -55,26 +162,6 @@ async function getArticle(supabase, articleId) {
   }
 
   return data;
-}
-
-function validateArticleBlocks(article, placements) {
-  const blocks = Array.isArray(article.content?.content)
-    ? article.content.content
-    : [];
-
-  const blockIds = new Set(
-    blocks.map((block) => block?.id).filter((id) => typeof id === "string"),
-  );
-
-  for (const placement of placements) {
-    if (!blockIds.has(placement.blockId)) {
-      throw new AuthError(
-        "One or more selected article blocks no longer exist. Save the article and try again.",
-        409,
-        "ARTICLE_BLOCK_NOT_FOUND",
-      );
-    }
-  }
 }
 
 function isEligibleLink(link, now) {
@@ -134,6 +221,7 @@ export async function GET(request, { params }) {
         `,
         )
         .eq("article_id", articleId),
+
       adminSupabase
         .from("affiliate_links")
         .select(
@@ -196,20 +284,19 @@ export async function GET(request, { params }) {
         : null,
     }));
 
+    const articleBlocks = getArticleBlocks(article).map((block) => ({
+      id: getBlockId(block),
+      type: getBlockType(block),
+      text: getBlockPreview(block),
+    }));
+
     return successResponse({
       placements,
       eligibleLinks,
       article: {
         id: article.id,
         status: article.status,
-        blocks: (Array.isArray(article.content?.content)
-          ? article.content.content
-          : []
-        ).map((block) => ({
-          id: block.id ?? null,
-          type: block.type ?? "unknown",
-          text: typeof block.text === "string" ? block.text.slice(0, 180) : "",
-        })),
+        blocks: articleBlocks,
       },
     });
   } catch (error) {
@@ -244,6 +331,7 @@ export async function PUT(request, { params }) {
     );
 
     const article = await getArticle(userSupabase, articleId);
+
     validateArticleAccess(article, user, profile.role);
     validateArticleBlocks(article, placements);
 

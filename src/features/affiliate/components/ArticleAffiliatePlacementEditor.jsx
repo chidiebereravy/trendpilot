@@ -6,16 +6,71 @@ import {
   useSaveArticleAffiliatePlacements,
 } from "@/features/affiliate/queries/affiliate.queries";
 
-function getBlockLabel(block, index) {
-  const type = block.type
-    ? block.type.charAt(0).toUpperCase() + block.type.slice(1)
-    : "Content";
+function getBlockId(block) {
+  if (typeof block?.attrs?.id === "string") {
+    return block.attrs.id;
+  }
 
-  const text = block.text?.trim();
+  if (typeof block?.id === "string") {
+    return block.id;
+  }
+
+  return null;
+}
+
+function getNodeText(node) {
+  if (!node || typeof node !== "object") {
+    return "";
+  }
+
+  if (typeof node.text === "string") {
+    return node.text;
+  }
+
+  if (node.type === "faqSection" && Array.isArray(node.attrs?.items)) {
+    return node.attrs.items
+      .map((item) => {
+        const question = typeof item.question === "string" ? item.question : "";
+
+        const answer = typeof item.answer === "string" ? item.answer : "";
+
+        return `${question} ${answer}`.trim();
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (!Array.isArray(node.content)) {
+    return "";
+  }
+
+  return node.content.map(getNodeText).filter(Boolean).join(" ");
+}
+
+function getBlockLabel(block, index) {
+  const labels = {
+    paragraph: "Paragraph",
+    heading: "Heading",
+    quote: "Quote",
+    blockquote: "Quote",
+    list: "List",
+    bulletList: "Bullet list",
+    orderedList: "Numbered list",
+    image: "Image",
+    table: "Table",
+    horizontalRule: "Divider",
+    faqSection: "FAQs",
+  };
+
+  const type = labels[block.type] ?? "Content";
+
+  const text = typeof block.text === "string" ? block.text : getNodeText(block);
 
   return {
     title: `${type} ${index + 1}`,
-    preview: text || "No text preview available",
+    preview:
+      text.replace(/\s+/g, " ").trim().slice(0, 180) ||
+      "No text preview available",
   };
 }
 
@@ -74,11 +129,11 @@ export default function ArticleAffiliatePlacementEditor({
     [savedBlocks],
   );
 
+  const currentBlockIds = useMemo(() => blocks.map(getBlockId), [blocks]);
+
   const contentStructureChanged = useMemo(() => {
     const currentIds = new Set(
-      blocks
-        .map((block) => block.id)
-        .filter((id) => typeof id === "string" && id.length > 0),
+      currentBlockIds.filter((id) => typeof id === "string" && id.length > 0),
     );
 
     if (
@@ -93,7 +148,7 @@ export default function ArticleAffiliatePlacementEditor({
       currentIds.size !== savedBlockIds.size ||
       [...currentIds].some((id) => !savedBlockIds.has(id))
     );
-  }, [blocks, savedBlocks, savedBlockIds]);
+  }, [blocks.length, currentBlockIds, savedBlockIds, savedBlocks.length]);
 
   const selectedPlacements = useMemo(
     () =>
@@ -178,18 +233,19 @@ export default function ArticleAffiliatePlacementEditor({
 
           <div className="space-y-4">
             {savedBlocks.map((block, index) => {
+              const blockId = block.id;
               const label = getBlockLabel(block, index);
-              const selectedId = draftPlacements[block.id] ?? "";
+              const selectedId = draftPlacements[blockId] ?? "";
 
               const selectedLink = existingPlacements.find(
                 (placement) =>
-                  placement.blockId === block.id &&
+                  placement.blockId === blockId &&
                   placement.affiliateLinkId === selectedId,
               )?.link;
 
               return (
                 <div
-                  key={block.id ?? `block-${index}`}
+                  key={blockId ?? `block-${index}`}
                   className="border border-[#edf0f2] p-4"
                 >
                   <div className="mb-3">
@@ -203,17 +259,17 @@ export default function ArticleAffiliatePlacementEditor({
                   </div>
 
                   <label
-                    htmlFor={`affiliate-placement-${block.id ?? index}`}
+                    htmlFor={`affiliate-placement-${blockId ?? index}`}
                     className="mb-1.5 block text-xs font-medium text-[#344054]"
                   >
                     Affiliate link
                   </label>
 
                   <select
-                    id={`affiliate-placement-${block.id ?? index}`}
+                    id={`affiliate-placement-${blockId ?? index}`}
                     value={selectedId}
                     onChange={(event) =>
-                      updatePlacement(block.id, event.target.value)
+                      updatePlacement(blockId, event.target.value)
                     }
                     className="w-full rounded-sm border border-[#dfe2e8] bg-white px-3 py-2.5 text-sm text-[#172033] outline-none focus:border-[#b99658] focus:ring-2 focus:ring-[#b99658]/10"
                   >

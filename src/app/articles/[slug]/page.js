@@ -51,6 +51,29 @@ function getArticleCanonicalUrl(article) {
   }
 }
 
+function getArticleFaqItems(content) {
+  const blocks = Array.isArray(content?.content) ? content.content : [];
+
+  return blocks.flatMap((block) => {
+    if (block.type !== "faqSection" || !Array.isArray(block.attrs?.items)) {
+      return [];
+    }
+
+    return block.attrs.items
+      .filter(
+        (item) =>
+          typeof item.question === "string" &&
+          item.question.trim().length > 0 &&
+          typeof item.answer === "string" &&
+          item.answer.trim().length > 0,
+      )
+      .map((item) => ({
+        question: item.question.trim(),
+        answer: item.answer.trim(),
+      }));
+  });
+}
+
 async function getArticlePageData(slug) {
   const article = await getPublishedArticleBySlug(slug);
 
@@ -185,6 +208,23 @@ async function ArticleContent({ params }) {
     },
   };
 
+  const faqItems = getArticleFaqItems(article.content);
+
+  const faqStructuredData = faqItems.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
+        })),
+      }
+    : null;
+
   return (
     <>
       <script
@@ -193,6 +233,15 @@ async function ArticleContent({ params }) {
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
+
+      {faqStructuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqStructuredData).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
 
       <article className="bg-white">
         <header className="border-b border-[#e9e7e2] bg-[#faf9f6]">
@@ -241,12 +290,6 @@ async function ArticleContent({ params }) {
                 {article.title}
               </h1>
 
-              {article.excerptText && (
-                <p className="mb-8 max-w-3xl text-lg leading-relaxed text-gray-600 sm:text-xl">
-                  {article.excerptText}
-                </p>
-              )}
-
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500">
                 <span className="inline-flex items-center gap-2">
                   <CalendarDays size={16} />
@@ -287,6 +330,7 @@ async function ArticleContent({ params }) {
             <div className="min-w-0">
               <ArticleDocument
                 content={article.content}
+                title={article.title}
                 affiliatePlacements={affiliatePlacements}
               />
 

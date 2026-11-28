@@ -35,6 +35,12 @@ import { useArticle } from "@/features/articles/queries/article.queries";
 import { useMedia } from "@/features/media/hooks/useMedia";
 import { slugify } from "@/lib/utils";
 import ArticleAffiliatePlacementEditor from "@/features/affiliate/components/ArticleAffiliatePlacementEditor";
+import RichArticleEditor from "@/features/articles/components/RichArticleEditor";
+import {
+  normalizeArticleContent,
+  stripEditorOnlyAttributes,
+  getArticleWordCount,
+} from "@/features/articles/utils/article-content";
 
 const inputClass =
   "mt-2 w-full rounded-sm border border-[#dfe2e8] bg-white px-3.5 py-3 text-sm text-[#172033] outline-none transition placeholder:text-gray-400 focus:border-[#b99658] focus:ring-2 focus:ring-[#b99658]/10";
@@ -46,199 +52,6 @@ function getErrorMessage(error) {
     error?.response?.data?.error?.message ||
     error?.message ||
     "Something went wrong. Please try again."
-  );
-}
-
-function createBlock(type) {
-  const id = crypto.randomUUID();
-
-  if (type === "heading") {
-    return { id, type, level: "h2", text: "" };
-  }
-
-  if (type === "quote") {
-    return { id, type, text: "" };
-  }
-
-  if (type === "list") {
-    return { id, type, style: "bullet", items: [""] };
-  }
-
-  return { id, type: "paragraph", text: "" };
-}
-
-function BlockEditor({ blocks, onChange }) {
-  function updateBlock(index, updates) {
-    onChange(
-      blocks.map((block, blockIndex) =>
-        blockIndex === index ? { ...block, ...updates } : block,
-      ),
-    );
-  }
-
-  function removeBlock(index) {
-    onChange(blocks.filter((_, blockIndex) => blockIndex !== index));
-  }
-
-  function addBlock(type) {
-    onChange([...blocks, createBlock(type)]);
-  }
-
-  return (
-    <section className="border border-[#e8e9ed] bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0f2] px-4 py-3">
-        <div>
-          <h2 className="text-sm font-bold text-[#14243d]">Article content</h2>
-          <p className="mt-1 text-[11px] text-gray-500">
-            Build your article using structured content blocks.
-          </p>
-        </div>
-        <span className="text-[11px] font-medium text-gray-400">
-          {blocks.length} {blocks.length === 1 ? "block" : "blocks"}
-        </span>
-      </div>
-
-      <div className="space-y-4 p-4 sm:p-6">
-        {blocks.length === 0 && (
-          <div className="border border-dashed border-[#dfe2e8] bg-[#fafbfc] px-5 py-12 text-center">
-            <FileText className="mx-auto text-[#b99658]" size={26} />
-            <p className="mt-3 text-sm font-semibold text-[#26354a]">
-              Start writing your article
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              Add a paragraph, heading, quotation or list below.
-            </p>
-          </div>
-        )}
-
-        {blocks.map((block, index) => (
-          <div
-            key={block.id}
-            className="group relative border border-[#edf0f2] bg-white p-3 transition focus-within:border-[#d7c49e] sm:p-4"
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] text-[#9a8055] uppercase">
-                {block.type === "paragraph" && <Type size={14} />}
-                {block.type === "heading" && <Bold size={14} />}
-                {block.type === "quote" && <Quote size={14} />}
-                {block.type === "list" && <List size={14} />}
-                {block.type}
-                <span className="text-gray-300">Â·</span>
-                {String(index + 1).padStart(2, "0")}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeBlock(index)}
-                aria-label={`Remove block ${index + 1}`}
-                className="rounded-sm p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-
-            {block.type === "heading" && (
-              <div className="mb-3">
-                <select
-                  aria-label="Heading level"
-                  value={block.level}
-                  onChange={(event) =>
-                    updateBlock(index, { level: event.target.value })
-                  }
-                  className="rounded-sm border border-[#e5e7eb] bg-white px-3 py-2 text-xs text-[#344054] outline-none focus:border-[#b99658]"
-                >
-                  <option value="h2">Heading 2</option>
-                  <option value="h3">Heading 3</option>
-                </select>
-              </div>
-            )}
-
-            {block.type === "list" && (
-              <div className="mb-3">
-                <select
-                  aria-label="List style"
-                  value={block.style}
-                  onChange={(event) =>
-                    updateBlock(index, { style: event.target.value })
-                  }
-                  className="rounded-sm border border-[#e5e7eb] bg-white px-3 py-2 text-xs text-[#344054] outline-none focus:border-[#b99658]"
-                >
-                  <option value="bullet">Bullet list</option>
-                  <option value="number">Numbered list</option>
-                </select>
-              </div>
-            )}
-
-            {block.type === "list" ? (
-              <textarea
-                value={block.items.join("\n")}
-                onChange={(event) =>
-                  updateBlock(index, {
-                    items: event.target.value.split("\n"),
-                  })
-                }
-                rows={Math.max(3, block.items.length + 1)}
-                placeholder="Write one list item per line..."
-                className={`${inputClass} resize-y leading-7`}
-              />
-            ) : (
-              <textarea
-                value={block.text}
-                onChange={(event) =>
-                  updateBlock(index, { text: event.target.value })
-                }
-                rows={block.type === "heading" ? 2 : 5}
-                placeholder={
-                  block.type === "heading"
-                    ? "Write your section heading..."
-                    : block.type === "quote"
-                      ? "Write a quotation..."
-                      : "Write your paragraph..."
-                }
-                className={`${inputClass} resize-y leading-7 ${
-                  block.type === "heading" ? "text-lg font-semibold" : "text-sm"
-                }`}
-              />
-            )}
-          </div>
-        ))}
-
-        <div className="border-t border-[#edf0f2] pt-4">
-          <p className="mb-3 text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase">
-            Add a content block
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => addBlock("paragraph")}
-              className="inline-flex items-center gap-2 border border-[#e5e7eb] px-3 py-2 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
-            >
-              <Plus size={13} /> Paragraph
-            </button>
-            <button
-              type="button"
-              onClick={() => addBlock("heading")}
-              className="inline-flex items-center gap-2 border border-[#e5e7eb] px-3 py-2 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
-            >
-              <Bold size={13} /> Heading
-            </button>
-            <button
-              type="button"
-              onClick={() => addBlock("quote")}
-              className="inline-flex items-center gap-2 border border-[#e5e7eb] px-3 py-2 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
-            >
-              <Quote size={13} /> Quote
-            </button>
-            <button
-              type="button"
-              onClick={() => addBlock("list")}
-              className="inline-flex items-center gap-2 border border-[#e5e7eb] px-3 py-2 text-xs font-semibold text-[#344054] transition hover:border-[#b99658]"
-            >
-              <List size={13} /> List
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -321,7 +134,11 @@ export default function ArticleEditor({ articleId = null }) {
   const [slug, setSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [excerpt, setExcerpt] = useState("");
-  const [blocks, setBlocks] = useState([]);
+  const [content, setContent] = useState({
+    type: "doc",
+    version: 2,
+    content: [],
+  });
   const [broadId, setBroadId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -365,15 +182,7 @@ export default function ArticleEditor({ articleId = null }) {
       setSlugManuallyEdited(true);
       setExcerpt(article.excerpt ?? "");
 
-      setBlocks(
-        (Array.isArray(article.content?.content)
-          ? article.content.content
-          : []
-        ).map((block) => ({
-          ...block,
-          id: block.id || crypto.randomUUID(),
-        })),
-      );
+      setContent(normalizeArticleContent(article.content));
 
       setCategoryId(article.category_id ?? "");
       setSubcategoryId(subcategory?.id ?? "");
@@ -430,15 +239,7 @@ export default function ArticleEditor({ articleId = null }) {
     );
   });
 
-  const wordCount = useMemo(() => {
-    const text = blocks
-      .map((block) =>
-        block.type === "list" ? block.items.join(" ") : block.text,
-      )
-      .join(" ");
-
-    return text.trim() ? text.trim().split(/\s+/).length : 0;
-  }, [blocks]);
+  const wordCount = useMemo(() => getArticleWordCount(content), [content]);
 
   function handleTitleChange(value) {
     setTitle(value);
@@ -500,10 +301,7 @@ export default function ArticleEditor({ articleId = null }) {
       title: title.trim(),
       slug: slug.trim() || undefined,
       excerpt: excerpt.trim() || null,
-      content: {
-        type: "doc",
-        content: blocks,
-      },
+      content: stripEditorOnlyAttributes(content),
       categoryId,
       featuredImagePath:
         featuredImage?.object_path ?? existingFeaturedImagePath ?? null,
@@ -729,12 +527,20 @@ export default function ArticleEditor({ articleId = null }) {
             </div>
           </section>
 
-          <BlockEditor blocks={blocks} onChange={setBlocks} />
+          <RichArticleEditor
+            content={content}
+            onChange={setContent}
+            mediaItems={mediaItems}
+            mediaLoading={mediaQuery.isLoading}
+            mediaError={
+              mediaQuery.isError ? getErrorMessage(mediaQuery.error) : ""
+            }
+          />
 
           {isEditing && (
             <ArticleAffiliatePlacementEditor
               articleId={articleId}
-              blocks={blocks}
+              blocks={content.content}
               role={role}
               articleStatus={initialStatus}
             />
@@ -1102,7 +908,9 @@ export default function ArticleEditor({ articleId = null }) {
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                   <span>Content blocks</span>
-                  <strong className="text-[#14243d]">{blocks.length}</strong>
+                  <strong className="text-[#14243d]">
+                    {content.content.length}
+                  </strong>
                 </div>
               </div>
             </div>

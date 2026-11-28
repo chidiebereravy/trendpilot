@@ -10,6 +10,7 @@ import {
   createNotificationSafely,
   createNotificationsForRolesSafely,
 } from "@/features/notifications/services/notification.service";
+import { validateArticleMedia } from "@/features/articles/services/article-media-validation";
 
 const articleFields =
   "id, title, slug, excerpt, content, category_id, author_id, created_by, status, featured_image_path, seo_title, seo_description, focus_keyword, canonical_url, no_index, published_at, scheduled_at, reviewed_by, reviewed_at, created_at, updated_at";
@@ -156,6 +157,14 @@ export async function POST(request) {
         "ARTICLE_STATUS_FORBIDDEN",
       );
     }
+
+    await validateArticleMedia({
+      supabase,
+      user,
+      role: profile.role,
+      content: body.content,
+      featuredImagePath: body.featuredImagePath ?? null,
+    });
 
     const authorId = isAuthor ? user.id : body.authorId || user.id;
     const slug = body.slug || slugify(body.title);

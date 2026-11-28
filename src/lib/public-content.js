@@ -9,19 +9,106 @@ const ARTICLE_FIELDS =
 const CATEGORY_FIELDS =
   "id, parent_id, name, slug, level, status, description, seo_title, seo_description, display_order";
 
+function extractArticleText(content) {
+  const parts = [];
+
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+
+    // Legacy article blocks.
+    if (typeof node.text === "string") {
+      parts.push(node.text);
+    }
+
+    if (Array.isArray(node.items)) {
+      parts.push(...node.items.filter((item) => typeof item === "string"));
+    }
+
+    // TipTap FAQ sections store questions and answers in attrs.items.
+    if (Array.isArray(node.attrs?.items)) {
+      for (const item of node.attrs.items) {
+        if (typeof item.question === "string") {
+          parts.push(item.question);
+        }
+
+        if (typeof item.answer === "string") {
+          parts.push(item.answer);
+        }
+      }
+    }
+
+    if (Array.isArray(node.content)) {
+      node.content.forEach(visit);
+    }
+  }
+
+  visit(content);
+
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+async function resolvePublishedArticleImages(supabase, content) {
+  if (!content || typeof content !== "object") return content;
+
+  const resolvedContent = JSON.parse(JSON.stringify(content));
+  const imageNodes = [];
+
+  function collectImages(node) {
+    if (!node || typeof node !== "object") return;
+
+    if (
+      node.type === "image" &&
+      node.attrs?.mediaId &&
+      node.attrs?.objectPath
+    ) {
+      imageNodes.push(node);
+    }
+
+    if (Array.isArray(node.content)) {
+      node.content.forEach(collectImages);
+    }
+  }
+
+  collectImages(resolvedContent);
+
+  const mediaIds = [...new Set(imageNodes.map((node) => node.attrs.mediaId))];
+
+  if (!mediaIds.length) return resolvedContent;
+
+  const { data, error } = await supabase
+    .from("media_assets")
+    .select("id, object_path")
+    .in("id", mediaIds)
+    .eq("bucket_id", "trendpilot-media")
+    .eq("status", "published")
+    .eq("purpose", "article");
+
+  if (error) {
+    console.error("Public article image lookup failed:", error);
+    return resolvedContent;
+  }
+
+  const mediaMap = new Map((data || []).map((item) => [item.id, item]));
+
+  for (const node of imageNodes) {
+    const media = mediaMap.get(node.attrs.mediaId);
+
+    // The saved object path must match the published media record.
+    if (!media || media.object_path !== node.attrs.objectPath) continue;
+
+    const imageUrl = getPublicImageUrl(supabase, media.object_path);
+
+    if (imageUrl) {
+      node.attrs.src = imageUrl;
+    }
+  }
+
+  return resolvedContent;
+}
+
 export function getArticleReadingTime(content) {
-  const blocks = Array.isArray(content?.content) ? content.content : [];
-
-  const words = blocks.reduce((total, block) => {
-    const text =
-      typeof block.text === "string"
-        ? block.text
-        : Array.isArray(block.items)
-          ? block.items.join(" ")
-          : "";
-
-    return total + (text.trim() ? text.trim().split(/\s+/).length : 0);
-  }, 0);
+  const text = extractArticleText(content);
+  const words = text ? text.split(/\s+/).length : 0;
 
   return Math.max(1, Math.ceil(words / 200));
 }
@@ -39,20 +126,7 @@ export function getPublicImageUrl(supabase, imagePath) {
 export function getArticleExcerpt(article) {
   if (article?.excerpt?.trim()) return article.excerpt.trim();
 
-  const blocks = Array.isArray(article?.content?.content)
-    ? article.content.content
-    : [];
-
-  const text = blocks
-    .map((block) => {
-      if (typeof block.text === "string") return block.text;
-      if (Array.isArray(block.items)) return block.items.join(" ");
-      return "";
-    })
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const text = extractArticleText(article?.content);
 
   if (text.length <= 180) return text;
 
@@ -239,9 +313,14 @@ export async function getPublishedArticleBySlug(slug) {
   if (!category) return null;
 
   const categories = await getPublishedCategories();
+  const resolvedContent = await resolvePublishedArticleImages(
+    supabase,
+    article.content,
+  );
 
   return {
     ...article,
+    content: resolvedContent,
     category,
     categoryPath: getCategoryAncestors(category, categories),
     author: null,

@@ -28,6 +28,7 @@ const blockIdSchema = z
   .uuid("The content block ID must be a valid UUID.")
   .optional();
 
+// Legacy article format: keep existing articles compatible.
 const paragraphBlockSchema = z.object({
   type: z.literal("paragraph"),
   id: blockIdSchema,
@@ -54,20 +55,225 @@ const listBlockSchema = z.object({
   items: z.array(z.string().max(5000)).min(1).max(100),
 });
 
-const articleBlockSchema = z.discriminatedUnion("type", [
-  paragraphBlockSchema,
-  headingBlockSchema,
-  quoteBlockSchema,
-  listBlockSchema,
-]);
-
-export const articleDocumentSchema = z
+const legacyArticleDocumentSchema = z
   .object({
     type: z.literal("doc"),
-    content: z.array(articleBlockSchema).max(5000),
+    content: z
+      .array(
+        z.discriminatedUnion("type", [
+          paragraphBlockSchema,
+          headingBlockSchema,
+          quoteBlockSchema,
+          listBlockSchema,
+        ]),
+      )
+      .max(5000),
+  })
+  .strict();
+
+// TipTap marks.
+const tiptapMarkSchema = z
+  .object({
+    type: z.enum(["bold", "italic", "underline", "strike", "code", "link"]),
+    attrs: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+// TipTap's recursive document-node structure.
+const tiptapNodeTypes = [
+  "doc",
+  "paragraph",
+  "text",
+  "heading",
+  "blockquote",
+  "bulletList",
+  "orderedList",
+  "listItem",
+  "hardBreak",
+  "horizontalRule",
+  "image",
+  "table",
+  "tableRow",
+  "tableHeader",
+  "tableCell",
+  "faqSection",
+];
+
+const tiptapNodeSchema = z.lazy(() =>
+  z
+    .object({
+      type: z.enum(tiptapNodeTypes),
+      attrs: z.record(z.string(), z.unknown()).optional(),
+      content: z.array(tiptapNodeSchema).max(5000).optional(),
+      marks: z.array(tiptapMarkSchema).max(20).optional(),
+      text: z.string().max(50000).optional(),
+    })
+    .strict(),
+);
+
+function isSafeLink(value) {
+  if (typeof value !== "string" || !value.trim()) return false;
+
+  if (value.startsWith("/") && !value.startsWith("//")) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return ["http:", "https:", "mailto:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function isSafeObjectPath(value) {
+  if (
+    typeof value !== "string" ||
+    !value.trim() ||
+    value.length > 1024 ||
+    value.startsWith("/") ||
+    value.includes("\\")
+  ) {
+    return false;
+  }
+
+  return value
+    .split("/")
+    .every((segment) => segment && segment !== "." && segment !== "..");
+}
+
+function validateTiptapNode(node, context, state, depth = 0) {
+  state.nodeCount += 1;
+
+  if (state.nodeCount > 5000) {
+    context.addIssue({
+      code: "custom",
+      message: "Article content contains too many nodes.",
+    });
+    return;
+  }
+
+  if (depth > 30) {
+    context.addIssue({
+      code: "custom",
+      message: "Article content is nested too deeply.",
+    });
+    return;
+  }
+
+  if (node.type === "text" && typeof node.text !== "string") {
+    context.addIssue({
+      code: "custom",
+      message: "Invalid text node.",
+    });
+  }
+
+  if (node.type === "heading") {
+    const level = node.attrs?.level;
+
+    if (![2, 3].includes(level)) {
+      context.addIssue({
+        code: "custom",
+        message: "Article headings must use level 2 or 3.",
+      });
+    }
+  }
+
+  if (node.type === "image") {
+    const attrs = node.attrs ?? {};
+
+    if (
+      typeof attrs.mediaId !== "string" ||
+      !z.string().uuid().safeParse(attrs.mediaId).success ||
+      !isSafeObjectPath(attrs.objectPath)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Article images must reference a valid media asset.",
+      });
+    }
+
+    if (attrs.src !== undefined && attrs.src !== null && attrs.src !== "") {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Article images must use permanent media references, not image URLs.",
+      });
+    }
+
+    if (attrs.alt !== undefined && typeof attrs.alt !== "string") {
+      context.addIssue({
+        code: "custom",
+        message: "Image alternative text must be text.",
+      });
+    }
+
+    if (attrs.caption !== undefined && typeof attrs.caption !== "string") {
+      context.addIssue({
+        code: "custom",
+        message: "Image captions must be text.",
+      });
+    }
+  }
+
+  if (node.type === "faqSection") {
+    const items = node.attrs?.items;
+
+    if (!Array.isArray(items) || items.length > 30) {
+      context.addIssue({
+        code: "custom",
+        message: "An FAQ section must contain no more than 30 questions.",
+      });
+    } else {
+      items.forEach((item) => {
+        if (
+          !item ||
+          typeof item.question !== "string" ||
+          !item.question.trim() ||
+          item.question.length > 500 ||
+          typeof item.answer !== "string" ||
+          !item.answer.trim() ||
+          item.answer.length > 5000
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "Each FAQ needs a valid question and answer.",
+          });
+        }
+      });
+    }
+  }
+
+  for (const mark of node.marks ?? []) {
+    if (mark.type === "link" && !isSafeLink(mark.attrs?.href)) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Article links must use a safe HTTP, HTTPS, mailto or relative URL.",
+      });
+    }
+  }
+
+  for (const child of node.content ?? []) {
+    validateTiptapNode(child, context, state, depth + 1);
+  }
+}
+
+const tiptapArticleDocumentSchema = z
+  .object({
+    type: z.literal("doc"),
+    version: z.literal(2),
+    content: z.array(tiptapNodeSchema).max(5000),
   })
   .strict()
   .superRefine((document, context) => {
+    const state = { nodeCount: 0 };
+
+    for (const node of document.content) {
+      validateTiptapNode(node, context, state, 1);
+    }
+
     const serialized = JSON.stringify(document);
 
     if (serialized.length > 1_000_000) {
@@ -77,6 +283,11 @@ export const articleDocumentSchema = z
       });
     }
   });
+
+export const articleDocumentSchema = z.union([
+  legacyArticleDocumentSchema,
+  tiptapArticleDocumentSchema,
+]);
 
 const articleFields = {
   title: z

@@ -10,6 +10,7 @@ import {
   createNotificationSafely,
   createNotificationsForRolesSafely,
 } from "@/features/notifications/services/notification.service";
+import { validateArticleMedia } from "@/features/articles/services/article-media-validation";
 
 const articleFields =
   "id, title, slug, excerpt, content, category_id, author_id, created_by, status, featured_image_path, seo_title, seo_description, focus_keyword, canonical_url, no_index, published_at, scheduled_at, reviewed_by, reviewed_at, created_at, updated_at";
@@ -161,6 +162,34 @@ export async function PATCH(request, { params }) {
           "ARTICLE_STATUS_FORBIDDEN",
         );
       }
+    }
+
+    const shouldValidateForPublication = ["published", "scheduled"].includes(
+      body.status,
+    );
+
+    const shouldValidateContent =
+      Object.hasOwn(body, "content") || shouldValidateForPublication;
+
+    const shouldValidateFeaturedImage =
+      Object.hasOwn(body, "featuredImagePath") || shouldValidateForPublication;
+
+    if (shouldValidateContent || shouldValidateFeaturedImage) {
+      await validateArticleMedia({
+        supabase,
+        user,
+        role: profile.role,
+        content: shouldValidateContent
+          ? (body.content ?? article.content)
+          : null,
+        featuredImagePath: shouldValidateFeaturedImage
+          ? body.featuredImagePath !== undefined
+            ? body.featuredImagePath
+            : article.featured_image_path
+          : null,
+        validateContent: shouldValidateContent,
+        validateFeaturedImage: shouldValidateFeaturedImage,
+      });
     }
 
     const updates = {};
